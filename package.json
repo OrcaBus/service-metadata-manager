@@ -1,5 +1,5 @@
 {
-  "name": "template-service-base",
+  "name": "service-metadata-manager",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -7,7 +7,6 @@
     "test": "tsc && jest",
     "cdk": "cdk",
     "cdk-stateless": "cdk -c deployMode=stateless",
-    "cdk-stateful": "cdk -c deployMode=stateful",
     "prepare": "pre-commit install",
     "prettier": "prettier --check .",
     "prettier-fix": "prettier --write .",
@@ -38,8 +37,9 @@
     "typescript-eslint": "^8.28.0"
   },
   "dependencies": {
-    "aws-cdk-lib": "^2.195.0",
-    "constructs": "^10.4.2",
-    "@orcabus/platform-cdk-constructs": "0.0.6"
+    "@aws-cdk/aws-lambda-python-alpha": "2.196.0-alpha.0",
+    "@orcabus/platform-cdk-constructs": "0.0.6",
+    "aws-cdk-lib": "^2.196.0",
+    "constructs": "^10.4.2"
   }
 }
