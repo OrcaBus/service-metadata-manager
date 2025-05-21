@@ -19,7 +19,7 @@ export class StatelessStack extends cdk.Stack {
         prod: getStackProps('PROD'),
       },
       pipelineName: 'OrcaBus-StatelessMetadataManager',
-      cdkSynthCmd: ['pnpm install --frozen-lockfile --ignore-scripts', 'pnpm cdk synth'],
+      cdkSynthCmd: ['pnpm install --frozen-lockfile --ignore-scripts', 'pnpm cdk-stateless synth'],
     });
   }
 }
