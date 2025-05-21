@@ -114,11 +114,11 @@ jobs:
           make --version
 
       - name: Install
-        working-directory: ./app
+        working-directory: ./metadata-manager
         run: |
           make install
 
       - name: Test
-        working-directory: ./app
+        working-directory: ./metadata-manager
         run: |
           make test
