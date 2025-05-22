@@ -1,3 +1,12 @@
+# Ignore everything by default
+*
+!metadata-manager/
+!infrastructure/
+
 cdk.out/
 __pycache__/
 **/__pycache__/
+.idea/
+
+.DS_Store
+**/.DS_Store
