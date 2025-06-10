@@ -2,7 +2,6 @@ import path from 'path';
 import { Construct } from 'constructs';
 import { Duration } from 'aws-cdk-lib';
 import { PythonFunction } from '@aws-cdk/aws-lambda-python-alpha';
-import { ISecret } from 'aws-cdk-lib/aws-secretsmanager';
 import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import {
   DockerImageFunction,
@@ -10,6 +9,7 @@ import {
   DockerImageCode,
 } from 'aws-cdk-lib/aws-lambda';
 import { EventBus } from 'aws-cdk-lib/aws-events';
+import { IDatabaseCluster } from 'aws-cdk-lib/aws-rds';
 
 type LambdaProps = {
   /**
@@ -17,9 +17,13 @@ type LambdaProps = {
    */
   basicLambdaConfig: Partial<DockerImageFunctionProps>;
   /**
-   * The secret for the db connection where the lambda will need access to
+   * The db cluster to where the lambda authorize to connect
    */
-  dbConnectionSecret: ISecret;
+  databaseCluster: IDatabaseCluster;
+  /**
+   * The database name that the lambda will use
+   */
+  databaseName: string;
   /**
    * The eventBusName to notify metadata state change
    */
@@ -48,8 +52,7 @@ export class LambdaLoadCustomCSVConstruct extends Construct {
       timeout: Duration.minutes(15),
       memorySize: 4096,
     });
-
-    lambdaProps.dbConnectionSecret.grantRead(this.lambda);
+    lambdaProps.databaseCluster.grantConnect(this.lambda, lambdaProps.databaseName);
 
     // We need to store this lambda ARN somewhere so that we could refer when need to load this manually
     new StringParameter(this, 'LoadCustomCSVLambdaArnParameterStore', {

@@ -2,7 +2,6 @@ import path from 'path';
 import { Construct } from 'constructs';
 import { Stack, StackProps } from 'aws-cdk-lib';
 import { Vpc, VpcLookupOptions, SecurityGroup } from 'aws-cdk-lib/aws-ec2';
-import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import { Code, Runtime, Architecture, LayerVersion } from 'aws-cdk-lib/aws-lambda';
 import { OrcaBusApiGatewayProps } from '@orcabus/platform-cdk-constructs/api-gateway';
 
@@ -11,6 +10,13 @@ import { LambdaMigrationConstruct } from './construct/lambda-migration';
 import { LambdaAPIConstruct } from './construct/lambda-api';
 import { LambdaLoadCustomCSVConstruct } from './construct/lambda-load-custom-csv';
 import { LambdaDjangoCommandConstruct } from './construct/lambda-django-command';
+import { DatabaseCluster } from 'aws-cdk-lib/aws-rds';
+import { StringParameter } from 'aws-cdk-lib/aws-ssm';
+import {
+  DB_CLUSTER_ENDPOINT_HOST_PARAMETER_NAME,
+  DB_CLUSTER_IDENTIFIER,
+  DB_CLUSTER_RESOURCE_ID_PARAMETER_NAME,
+} from '@orcabus/platform-cdk-constructs/shared-config/database';
 
 export type MetadataManagerStackProps = {
   /**
@@ -36,7 +42,8 @@ export type MetadataManagerStackProps = {
 };
 
 export class MetadataManagerStack extends Stack {
-  private readonly MM_RDS_CRED_SECRET_NAME = 'orcabus/metadata_manager/rds-login-credential'; // pragma: allowlist secret
+  private readonly METADATA_MANAGER_DB_NAME = 'metadata_manager';
+  private readonly METADATA_MANAGER_DB_USER = 'metadata_manager';
 
   constructor(scope: Construct, id: string, props: StackProps & MetadataManagerStackProps) {
     super(scope, id, props);
@@ -49,13 +56,6 @@ export class MetadataManagerStack extends Stack {
       vpc
     );
 
-    // lookup the secret manager resource so we could give lambda permissions to read it
-    const dbSecret = Secret.fromSecretNameV2(
-      this,
-      'DbSecretConnection',
-      this.MM_RDS_CRED_SECRET_NAME
-    );
-
     // despite of multiple lambda all of them will share the same dependencies
     const dependencySlimLayer = new LayerVersion(this, 'DependenciesLayer', {
       code: Code.fromDockerBuild(__dirname + '/../../', {
@@ -64,6 +64,20 @@ export class MetadataManagerStack extends Stack {
       }),
       compatibleArchitectures: [Architecture.ARM_64],
       compatibleRuntimes: [Runtime.PYTHON_3_12],
+    });
+
+    // Grab the database cluster
+    const clusterResourceIdentifier = StringParameter.valueForStringParameter(
+      this,
+      DB_CLUSTER_RESOURCE_ID_PARAMETER_NAME
+    );
+    const clusterHostEndpoint = StringParameter.valueForStringParameter(
+      this,
+      DB_CLUSTER_ENDPOINT_HOST_PARAMETER_NAME
+    );
+    const dbCluster = DatabaseCluster.fromDatabaseClusterAttributes(this, 'OrcabusDbCluster', {
+      clusterIdentifier: DB_CLUSTER_IDENTIFIER,
+      clusterResourceIdentifier: clusterResourceIdentifier,
     });
 
     const basicLambdaConfig = {
@@ -75,7 +89,9 @@ export class MetadataManagerStack extends Stack {
       },
       environment: {
         DJANGO_SETTINGS_MODULE: 'app.settings.aws',
-        RDS_CRED_SECRET_NAME: this.MM_RDS_CRED_SECRET_NAME,
+        PG_HOST: clusterHostEndpoint,
+        PG_USER: this.METADATA_MANAGER_DB_USER,
+        PG_DB_NAME: this.METADATA_MANAGER_DB_NAME,
       },
       securityGroups: [lambdaSG],
       vpc: vpc,
@@ -86,31 +102,36 @@ export class MetadataManagerStack extends Stack {
 
     new LambdaMigrationConstruct(this, 'MigrationLambda', {
       basicLambdaConfig: basicLambdaConfig,
-      dbConnectionSecret: dbSecret,
+      databaseCluster: dbCluster,
+      databaseName: this.METADATA_MANAGER_DB_NAME,
       vpc: vpc,
     });
 
     new LambdaDjangoCommandConstruct(this, 'DjangoCommandLambda', {
       basicLambdaConfig: basicLambdaConfig,
-      dbConnectionSecret: dbSecret,
+      databaseCluster: dbCluster,
+      databaseName: this.METADATA_MANAGER_DB_NAME,
     });
 
     const syncGsheetLambda = new LambdaSyncGsheetConstruct(this, 'SyncGsheetLambda', {
       basicLambdaConfig: basicLambdaConfig,
-      dbConnectionSecret: dbSecret,
+      databaseCluster: dbCluster,
+      databaseName: this.METADATA_MANAGER_DB_NAME,
       isDailySync: props.isDailySync,
       eventBusName: props.eventBusName,
     });
 
     const syncCustomCsvLambda = new LambdaLoadCustomCSVConstruct(this, 'CustomCsvLoaderLambda', {
       basicLambdaConfig: basicLambdaConfig,
-      dbConnectionSecret: dbSecret,
+      databaseCluster: dbCluster,
+      databaseName: this.METADATA_MANAGER_DB_NAME,
       eventBusName: props.eventBusName,
     });
 
     new LambdaAPIConstruct(this, 'APILambda', {
       basicLambdaConfig: basicLambdaConfig,
-      dbConnectionSecret: dbSecret,
+      databaseCluster: dbCluster,
+      databaseName: this.METADATA_MANAGER_DB_NAME,
       apiGatewayConstructProps: props.apiGatewayCognitoProps,
       syncCustomCsvLambda: syncCustomCsvLambda.lambda,
       syncGsheetLambda: syncGsheetLambda.lambda,

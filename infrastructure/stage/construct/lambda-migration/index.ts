@@ -1,9 +1,9 @@
 import { Construct } from 'constructs';
 import { Duration } from 'aws-cdk-lib';
 import { PythonFunction, PythonFunctionProps } from '@aws-cdk/aws-lambda-python-alpha';
-import { ISecret } from 'aws-cdk-lib/aws-secretsmanager';
 import { IVpc } from 'aws-cdk-lib/aws-ec2';
 import { InvocationType, Trigger } from 'aws-cdk-lib/triggers';
+import { IDatabaseCluster } from 'aws-cdk-lib/aws-rds';
 
 type LambdaProps = {
   /**
@@ -11,9 +11,13 @@ type LambdaProps = {
    */
   basicLambdaConfig: PythonFunctionProps;
   /**
-   * The secret for the db connection where the lambda will need access to
+   * The db cluster to where the lambda authorize to connect
    */
-  dbConnectionSecret: ISecret;
+  databaseCluster: IDatabaseCluster;
+  /**
+   * The database name that the lambda will use
+   */
+  databaseName: string;
   /**
    * VPC used for Custom Provider Function
    */
@@ -32,7 +36,7 @@ export class LambdaMigrationConstruct extends Construct {
       handler: 'handler',
       timeout: Duration.minutes(5),
     });
-    props.dbConnectionSecret.grantRead(this.lambda);
+    props.databaseCluster.grantConnect(this.lambda, props.databaseName);
 
     new Trigger(this, 'MigrationLambdaTrigger', {
       handler: this.lambda,
