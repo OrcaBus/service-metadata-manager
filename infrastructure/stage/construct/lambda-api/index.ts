@@ -8,12 +8,12 @@ import {
   HttpRouteKey,
 } from 'aws-cdk-lib/aws-apigatewayv2';
 import { PythonFunction, PythonFunctionProps } from '@aws-cdk/aws-lambda-python-alpha';
-import { ISecret } from 'aws-cdk-lib/aws-secretsmanager';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import {
   OrcaBusApiGateway,
   OrcaBusApiGatewayProps,
 } from '@orcabus/platform-cdk-constructs/api-gateway';
+import { IDatabaseCluster } from 'aws-cdk-lib/aws-rds';
 
 type LambdaProps = {
   /**
@@ -21,9 +21,13 @@ type LambdaProps = {
    */
   basicLambdaConfig: PythonFunctionProps;
   /**
-   * The secret for the db connection where the lambda will need access to
+   * The db cluster to where the lambda authorize to connect
    */
-  dbConnectionSecret: ISecret;
+  databaseCluster: IDatabaseCluster;
+  /**
+   * The database name that the lambda will use
+   */
+  databaseName: string;
   /**
    * The props for api-gateway
    */
@@ -60,7 +64,7 @@ export class LambdaAPIConstruct extends Construct {
       // https://lambda-power-tuning.show/#gAAAAQACAAQABgAI;ulPPRclpmUU0UHpFIoxhRT3aVkVGyk9F;XJ7INgXRyTZLUMM2DoLGNpPG0DZMo/42
       memorySize: 1024,
     });
-    lambdaProps.dbConnectionSecret.grantRead(this.lambda);
+    lambdaProps.databaseCluster.grantConnect(this.lambda, lambdaProps.databaseName);
 
     // add some integration to the http api gw
     const apiIntegration = new HttpLambdaIntegration('ApiLambdaIntegration', this.lambda);

@@ -2,7 +2,6 @@ import path from 'path';
 import { Construct } from 'constructs';
 import { Duration } from 'aws-cdk-lib';
 import { PythonFunction } from '@aws-cdk/aws-lambda-python-alpha';
-import { ISecret } from 'aws-cdk-lib/aws-secretsmanager';
 import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { Rule, Schedule, EventBus } from 'aws-cdk-lib/aws-events';
 import { LambdaFunction } from 'aws-cdk-lib/aws-events-targets';
@@ -11,6 +10,7 @@ import {
   DockerImageFunctionProps,
   DockerImageCode,
 } from 'aws-cdk-lib/aws-lambda';
+import { IDatabaseCluster } from 'aws-cdk-lib/aws-rds';
 
 type LambdaProps = {
   /**
@@ -18,9 +18,13 @@ type LambdaProps = {
    */
   basicLambdaConfig: Partial<DockerImageFunctionProps>;
   /**
-   * The secret for the db connection where the lambda will need access to
+   * The db cluster to where the lambda authorize to connect
    */
-  dbConnectionSecret: ISecret;
+  databaseCluster: IDatabaseCluster;
+  /**
+   * The database name that the lambda will use
+   */
+  databaseName: string;
   /**
    * If the lambda should run daily sync
    */
@@ -57,8 +61,7 @@ export class LambdaSyncGsheetConstruct extends Construct {
       timeout: Duration.minutes(15),
       memorySize: 4096,
     });
-
-    lambdaProps.dbConnectionSecret.grantRead(this.lambda);
+    lambdaProps.databaseCluster.grantConnect(this.lambda, lambdaProps.databaseName);
 
     // the sync-db lambda would need some cred to access GDrive and these are stored in SSM
     const trackingSheetCredSSM = StringParameter.fromSecureStringParameterAttributes(
