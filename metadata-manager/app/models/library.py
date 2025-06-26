@@ -18,6 +18,7 @@ class WorkflowType(models.TextChoices):
     CONTROL = 'control'
     BCL = 'bcl'
     MANUAL = 'manual'
+    GERMLINE = 'germline', 'germline only',
 
 
 class Phenotype(models.TextChoices):

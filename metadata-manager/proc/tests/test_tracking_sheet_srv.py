@@ -84,7 +84,7 @@ RECORD_3 = {
     "Type": "ctTSO",
     "Assay": "ctTSO",
     "OverrideCycles": "Y151;I8U12;I8;Y151",
-    "Workflow": "research",
+    "Workflow": "germline only",
     "Coverage (X)": "75",
     "TruSeq Index, unless stated": "",
     "Run#": "P101",
