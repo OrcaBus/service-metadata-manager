@@ -73,4 +73,27 @@ function applyNagSuppression(stack: Stack) {
     ],
     true
   );
+
+  NagSuppressions.addResourceSuppressionsByPath(
+    stack,
+    '/DeployStack/MigrationLambda/backupMigrationStep/Resource',
+    [
+      {
+        id: 'AwsSolutions-SF1',
+        reason: 'Disable cloudwatch logs for simple Step Functions.',
+      },
+    ],
+    true
+  );
+  NagSuppressions.addResourceSuppressionsByPath(
+    stack,
+    '/DeployStack/MigrationLambda/backupMigrationStep/Resource',
+    [
+      {
+        id: 'AwsSolutions-SF2',
+        reason: 'Disable X-Ray for now.',
+      },
+    ],
+    true
+  );
 }
