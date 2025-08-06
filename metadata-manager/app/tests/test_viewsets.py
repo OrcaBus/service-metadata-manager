@@ -3,8 +3,8 @@ import logging
 
 from django.test import TestCase
 
-from app.models import Library, Sample
-from app.tests.factories import LIBRARY_1, SUBJECT_1, SAMPLE_1
+from app.models import Library, Sample, Subject, Individual, Project
+from app.tests.factories import LIBRARY_1, SUBJECT_1, SAMPLE_1, INDIVIDUAL_1, PROJECT_1, CONTACT_1
 from app.tests.utils import insert_mock_1, is_obj_exists
 
 logger = logging.getLogger()
@@ -98,7 +98,45 @@ class LabViewSetTestCase(TestCase):
 
         self.assertEqual(library.coverage, LIBRARY_1['coverage'], "Coverage should be the same")
         self.client.patch(f"/{version_endpoint(f"library/{library.orcabus_id}/")}",
-                                data=json.dumps({"coverage":new_coverage}),
-                                headers={'Authorization': f'Bearer {TEST_JWT}', 'Content-Type': 'application/json'})
+                          data=json.dumps({"coverage": new_coverage}),
+                          headers={'Authorization': f'Bearer {TEST_JWT}', 'Content-Type': 'application/json'})
         library = Library.objects.get(library_id=LIBRARY_1['library_id'])
         self.assertEqual(library.coverage, new_coverage, "Coverage should be updated")
+
+    def test_delete_relationship(self):
+        """
+        python manage.py test app.tests.test_viewsets.LabViewSetTestCase.test_delete_relationship
+        """
+
+        # TEST for subject and individual relationship
+        subject = Subject.objects.get(subject_id=SUBJECT_1['subject_id'])
+        individual = subject.individual_set.get(individual_id=INDIVIDUAL_1['individual_id'])
+
+        self.assertTrue(subject.individual_set.exists(), "Verify individual is linked prior to deletion")
+        self.client.delete(
+            f"/{version_endpoint(f"subject/{subject.orcabus_id}/individual/{individual.orcabus_id}/relationship/")}",
+            headers={'Authorization': f'Bearer {TEST_JWT}', 'Content-Type': 'application/json'})
+
+        self.assertFalse(subject.individual_set.exists(), "Individual should be unlinked from subject")
+
+        # TEST for project and contact relationship
+        project = Project.objects.get(project_id=PROJECT_1['project_id'])
+        contact = project.contact_set.get(contact_id=CONTACT_1['contact_id'])
+
+        self.assertTrue(project.contact_set.exists(), "Verify linked prior to deletion")
+        self.client.delete(
+            f"/{version_endpoint(f"project/{project.orcabus_id}/contact/{contact.orcabus_id}/relationship/")}",
+            headers={'Authorization': f'Bearer {TEST_JWT}', 'Content-Type': 'application/json'})
+
+        self.assertFalse(project.contact_set.exists(), "Verify unlinked after deletion")
+
+        # TEST for library and project relationship
+        library = Library.objects.get(library_id=LIBRARY_1['library_id'])
+        project = library.project_set.get(project_id=PROJECT_1['project_id'])
+
+        self.assertTrue(library.project_set.exists(), "Verify linked prior to deletion")
+        self.client.delete(
+            f"/{version_endpoint(f"library/{library.orcabus_id}/project/{project.orcabus_id}/relationship/")}",
+            headers={'Authorization': f'Bearer {TEST_JWT}', 'Content-Type': 'application/json'})
+
+        self.assertFalse(library.project_set.exists(), "Verify unlinked after deletion")

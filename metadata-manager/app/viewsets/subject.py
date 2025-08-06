@@ -1,4 +1,6 @@
 from drf_spectacular.utils import extend_schema, OpenApiParameter
+from rest_framework import status
+from rest_framework.response import Response
 from rest_framework.decorators import action
 
 from app.models import Subject, Library
@@ -8,7 +10,7 @@ from .base import BaseViewSet
 
 class SubjectViewSet(BaseViewSet):
     serializer_class = SubjectSerializer
-    search_fields = [*Subject.get_base_fields(), 'library__library_id','individual_set__individual_id']
+    search_fields = [*Subject.get_base_fields(), 'library__library_id', 'individual_set__individual_id']
     queryset = Subject.objects.all()
 
     def get_queryset(self):
@@ -35,14 +37,11 @@ class SubjectViewSet(BaseViewSet):
 
         return Subject.objects.get_by_keyword(qs, **query_params)
 
-
     @extend_schema(responses=SubjectDetailSerializer(many=False))
     def retrieve(self, request, *args, **kwargs):
         self.serializer_class = SubjectDetailSerializer
         self.queryset = Subject.objects.prefetch_related('individual_set').prefetch_related('library_set').all()
         return super().retrieve(request, *args, **kwargs)
-
-
 
     @extend_schema(
         parameters=[
@@ -75,3 +74,22 @@ class SubjectViewSet(BaseViewSet):
     @action(detail=True, methods=['get'], url_name='history', url_path='history')
     def retrieve_history(self, request, *args, **kwargs):
         return super().retrieve_history(SubjectHistorySerializer)
+
+    @extend_schema(responses=SubjectDetailSerializer(many=False), description="Unlink an individual from this subject", )
+    @action(detail=True, methods=['delete'], url_name='remove_individual_relationship',
+            url_path='individual/(?P<individual_orcabus_id>[^/]+)/relationship')
+    def remove_individual_relationship(self, request, *args, **kwargs):
+        self.serializer_class = SubjectDetailSerializer
+        subject_orcabus_id = kwargs.get('pk', None)
+        individual_orcabus_id = kwargs.get('individual_orcabus_id', None)
+
+        subject = Subject.objects.prefetch_related('individual_set').prefetch_related('library_set').get(
+            pk=subject_orcabus_id)
+        try:
+            individual = subject.individual_set.get(orcabus_id=individual_orcabus_id)
+            subject.individual_set.remove(individual)
+
+            serializer = self.get_serializer(subject)
+            return Response(serializer.data)
+        except subject.individual_set.model.DoesNotExist:
+            return Response({'detail': 'Individual not found.'}, status=status.HTTP_404_NOT_FOUND)

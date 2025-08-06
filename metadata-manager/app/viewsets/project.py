@@ -1,5 +1,7 @@
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
+from rest_framework import status
+from rest_framework.response import Response
 
 from app.models import Project
 from app.serializers.project import ProjectDetailSerializer, ProjectSerializer, ProjectHistorySerializer
@@ -37,3 +39,21 @@ class ProjectViewSet(BaseViewSet):
     @action(detail=True, methods=['get'], url_name='history', url_path='history')
     def retrieve_history(self, request, *args, **kwargs):
         return super().retrieve_history(ProjectHistorySerializer)
+
+    @extend_schema(responses=ProjectDetailSerializer(many=False), description="Unlink contact from project", )
+    @action(detail=True, methods=['delete'], url_name='remove_contact_relationship',
+            url_path='contact/(?P<contact_orcabus_id>[^/]+)/relationship')
+    def remove_contact_relationship(self, request, *args, **kwargs):
+        self.serializer_class = ProjectDetailSerializer
+        project_orcabus_id = kwargs.get('pk', None)
+        contact_orcabus_id = kwargs.get('contact_orcabus_id', None)
+
+        project = Project.objects.get(pk=project_orcabus_id)
+        try:
+            contact = project.contact_set.get(orcabus_id=contact_orcabus_id)
+            project.contact_set.remove(contact)
+
+            serializer = self.get_serializer(project)
+            return Response(serializer.data)
+        except project.contact_set.model.DoesNotExist:
+            return Response({'detail': 'Contact not found.'}, status=status.HTTP_404_NOT_FOUND)
