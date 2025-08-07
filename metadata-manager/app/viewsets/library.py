@@ -1,5 +1,7 @@
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework.decorators import action
+from rest_framework import status
+from rest_framework.response import Response
 
 from app.models import Library, Subject
 from app.serializers.library import LibrarySerializer, LibraryDetailSerializer, LibraryHistorySerializer
@@ -85,3 +87,22 @@ class LibraryViewSet(BaseViewSet):
     @action(detail=True, methods=['get'], url_name='history', url_path='history')
     def retrieve_history(self, request, *args, **kwargs):
         return super().retrieve_history(LibraryHistorySerializer)
+
+    @extend_schema(responses=LibraryDetailSerializer(many=False), description="Unlink an project from this library", )
+    @action(detail=True, methods=['delete'], url_name='remove_project_relationship',
+            url_path='project/(?P<project_orcabus_id>[^/]+)/relationship')
+    def remove_project_relationship(self, request, *args, **kwargs):
+        self.serializer_class = LibraryDetailSerializer
+        library_orcabus_id = kwargs.get('pk', None)
+        project_orcabus_id = kwargs.get('project_orcabus_id', None)
+
+        library = Library.objects.get(pk=library_orcabus_id)
+
+        try:
+            project = library.project_set.get(orcabus_id=project_orcabus_id)
+            library.project_set.remove(project)
+
+            serializer = self.get_serializer(library)
+            return Response(serializer.data)
+        except library.project_set.model.DoesNotExist:
+            return Response({'detail': 'Project not found.'}, status=status.HTTP_404_NOT_FOUND)
