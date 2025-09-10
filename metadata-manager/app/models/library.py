@@ -47,6 +47,8 @@ class LibraryType(models.TextChoices):
     TSO_RNA = 'TSO-RNA', 'TSO_RNA'
     WGS = 'WGS'
     WTS = 'WTS'
+    I_METHYL_5B = 'iMethyl5B'
+    I_MTHYL_5B_CAP = 'iMthyl5BCap'
 
     OTHER = 'other'
 
