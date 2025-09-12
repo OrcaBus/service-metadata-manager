@@ -77,5 +77,5 @@ Replace `THE_URL` with your actual presigned URL.
 
 ## References
 
-- [API Documentation](../../README.md#api)
-- [CSV Loader Implementation](../proc/service/load_csv_srv.py)
+- [API Documentation](../../../../metadata-manager/README.md#api)
+- [CSV Loader Implementation](../../../../metadata-manager/proc/service/load_csv_srv.py)

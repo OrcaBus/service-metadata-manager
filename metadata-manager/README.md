@@ -145,7 +145,7 @@ Please refer to the [tracking-sheet-service](proc/service/tracking_sheet_srv.py)
 
 ### Custom CSV File Loader
 
-For the manual sync procedure, see [docs/SOP/MM.1-SyncExternalMetadata.md](./docs/SOP/MM.1-SyncExternalMetadata.md).
+For the manual sync procedure, see [MM.1-SyncExternalMetadata.md](../docs/operation/sop/MM.1/MM.1-SyncExternalMetadata.md).
 
 ### Audit Data
 
