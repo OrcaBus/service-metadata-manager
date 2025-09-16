@@ -145,33 +145,7 @@ Please refer to the [tracking-sheet-service](proc/service/tracking_sheet_srv.py)
 
 ### Custom CSV File Loader
 
-The application also supports loading data from a custom CSV file. The CSV file should have the following columns:
-
-| Sheet Header         | Table        | Field Name         |
-|----------------------|--------------|--------------------|
-| Individual_id        | `Individual` | individual_id      |
-| individual_id_source | `Individual` | source             |
-| *subject_id          | `Subject`    | subject_id         |
-| sample_id            | `Sample`     | sample_id          |
-| external_sample_id   | `Sample`     | external_sample_id |
-| source               | `Sample`     | source             |
-| *library_id          | `Library`    | library_id         |
-| phenotype            | `Library`    | phenotype          |
-| workflow             | `Library`    | workflow           |
-| quality              | `Library`    | quality            |
-| type                 | `Library`    | type               |
-| coverage             | `Library`    | coverage           |
-| assay                | `Library`    | assay              |
-| override_cycles      | `Library`    | override_cycles    |
-| project_name         | `Project`    | project_id         |
-| project_owner        | `Contact`    | contact_id         |
-
-All asterisked (*) header are required fields to process a record.
-
-The CSV file should be in a presigned URL format, where the loader will read and insert to the database.
-To trigger the loader please look at `./deploy/README.md` for more info.
-
-Please refer to the [load-csv-service](proc/service/load_csv_srv.py) implementation.
+For the manual sync procedure, see [MM.1-SyncExternalMetadata.md](../docs/operation/sop/MM.1/MM.1-SyncExternalMetadata.md).
 
 ### Audit Data
 
