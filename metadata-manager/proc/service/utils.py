@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 from django.core.management import call_command
 
+from app.serializers.utils import to_camel_case_key_dict
+
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
@@ -85,3 +87,12 @@ def clean_data_cell(value):
         value = None
 
     return value
+
+
+def format_put_event_entry(detail):
+    return {
+        "Source": 'orcabus.metadatamanager',
+        "DetailType": "MetadataStateChange",
+        "Detail": detail,
+        "EventBusName": os.environ.get("EVENT_BUS_NAME")
+    }

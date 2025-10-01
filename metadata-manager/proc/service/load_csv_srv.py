@@ -10,7 +10,8 @@ from app.models import Subject, Sample, Library, Project, Contact, Individual
 from app.models.library import Quality, LibraryType, Phenotype, WorkflowType, sanitize_library_coverage
 from app.models.sample import Source
 from app.models.utils import get_value_from_human_readable_label
-from proc.service.utils import clean_model_history
+from app.serializers.utils import to_camel_case_key_dict
+from proc.service.utils import clean_model_history, format_put_event_entry
 from app.serializers import LibrarySerializer
 from app.schema.events.metadata_state_change_model import MetadataStateChange, Action, Model
 
@@ -219,9 +220,9 @@ def load_metadata_csv(df: pd.DataFrame, is_emit_eb_events: bool = True, user_id:
                     action=Action.CREATE,
                     model=Model.LIBRARY,
                     refId=lib_dict.get('orcabus_id'),
-                    data=lib_dict
+                    data=to_camel_case_key_dict(lib_dict)
                 )
-                event_bus_entries.append(event.get_put_event_entry())
+                event_bus_entries.append(format_put_event_entry(event.model_dump_json()))
 
             if is_lib_updated:
                 stats['library']['update_count'] += 1
@@ -230,9 +231,9 @@ def load_metadata_csv(df: pd.DataFrame, is_emit_eb_events: bool = True, user_id:
                     action=Action.UPDATE,
                     model=Model.LIBRARY,
                     refId=lib_dict.get('orcabus_id'),
-                    data=lib_dict,
+                    data=to_camel_case_key_dict(lib_dict),
                 )
-                event_bus_entries.append(event.get_put_event_entry())
+                event_bus_entries.append(format_put_event_entry(event.model_dump_json()))
 
             # link library to its project
             if project:
