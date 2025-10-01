@@ -1,2 +1,4 @@
 -r requirements-test.txt
 django_extensions
+datamodel-code-generator
+check-jsonschema

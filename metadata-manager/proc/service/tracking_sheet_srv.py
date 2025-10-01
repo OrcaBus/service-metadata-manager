@@ -15,8 +15,8 @@ from app.models.library import Quality, LibraryType, Phenotype, WorkflowType, sa
 from app.models.sample import Source
 from app.models.utils import get_value_from_human_readable_label
 from app.serializers import LibrarySerializer
-from proc.aws.event.event import MetadataStateChangeEvent
 from proc.service.utils import clean_model_history, sanitize_lab_metadata_df
+from app.schema.events.metadata_state_change_model import MetadataStateChange, Action, Model
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -86,10 +86,10 @@ def persist_lab_metadata(df: pd.DataFrame, sheet_year: str, is_emit_eb_events: b
             library_id__in=df['library_id'].tolist()).iterator():
         stats['library']['delete_count'] += 1
         lib_dict = LibrarySerializer(lib).data
-        event = MetadataStateChangeEvent(
-            action='DELETE',
-            model='LIBRARY',
-            ref_id=lib_dict.get('orcabus_id'),
+        event = MetadataStateChange(
+            action=Action.DELETE,
+            model=Model.LIBRARY,
+            refId=lib_dict.get('orcabus_id'),
             data=lib_dict
         )
         event_bus_entries.append(event.get_put_event_entry())
@@ -227,10 +227,10 @@ def persist_lab_metadata(df: pd.DataFrame, sheet_year: str, is_emit_eb_events: b
 
             if is_lib_created:
                 stats['library']['create_count'] += 1
-                event = MetadataStateChangeEvent(
-                    action='CREATE',
-                    model='LIBRARY',
-                    ref_id=lib_dict.get('orcabus_id'),
+                event = MetadataStateChange(
+                    action=Action.CREATE,
+                    model=Model.LIBRARY,
+                    refId=lib_dict.get('orcabus_id'),
                     data=lib_dict
                 )
                 event_bus_entries.append(event.get_put_event_entry())
@@ -238,10 +238,10 @@ def persist_lab_metadata(df: pd.DataFrame, sheet_year: str, is_emit_eb_events: b
             if is_lib_updated:
                 stats['library']['update_count'] += 1
 
-                event = MetadataStateChangeEvent(
-                    action='UPDATE',
-                    model='LIBRARY',
-                    ref_id=lib_dict.get('orcabus_id'),
+                event = MetadataStateChange(
+                    action=Action.UPDATE,
+                    model=Model.LIBRARY,
+                    refId=lib_dict.get('orcabus_id'),
                     data=lib_dict,
                 )
                 event_bus_entries.append(event.get_put_event_entry())
