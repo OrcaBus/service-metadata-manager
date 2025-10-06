@@ -3,11 +3,13 @@
 
 generate-event-models:
 	@datamodel-codegen \
-		--input ./MetadataStateChange/MetadataStateChange.schema.json \
+		--input ../../../../docs/events/MetadataStateChange/MetadataStateChange.schema.json \
 		--input-file-type jsonschema \
 		--output ./metadata_state_change_model.py
 
 
-test-msc:
-	@check-jsonschema --schemafile MetadataStateChange/MetadataStateChange.schema.json MetadataStateChange/example/MSC__example1.json
-	@check-jsonschema --schemafile MetadataStateChange/MetadataStateChange.schema.json MetadataStateChange/example/MSC__example2.json
+test:
+	@check-jsonschema --schemafile ../../../../docs/events/MetadataStateChange/MetadataStateChange.schema.json \
+		../../../../docs/events/MetadataStateChange/example/MSC__example1.json
+	@check-jsonschema --schemafile ../../../../docs/events/MetadataStateChange/MetadataStateChange.schema.json \
+		../../../../docs/events/MetadataStateChange/example/MSC__example2.json
