@@ -17,6 +17,7 @@ import {
   DB_CLUSTER_IDENTIFIER,
   DB_CLUSTER_RESOURCE_ID_PARAMETER_NAME,
 } from '@orcabus/platform-cdk-constructs/shared-config/database';
+import { EventSchemaConstruct } from './construct/event-schema';
 
 export type MetadataManagerStackProps = {
   /**
@@ -136,5 +137,7 @@ export class MetadataManagerStack extends Stack {
       syncCustomCsvLambda: syncCustomCsvLambda.lambda,
       syncGsheetLambda: syncGsheetLambda.lambda,
     });
+
+    new EventSchemaConstruct(this, 'EventSchema');
   }
 }

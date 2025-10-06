@@ -64,7 +64,7 @@ on the model of the record.
 The metadata loader currently supports two Lambda functions: one for syncing from a tracking sheet and another for
 syncing from a custom CSV presigned URL. Upon a CREATE or UPDATE operation in the metadata library, the Lambda function
 will publish events to the `MainOrcabusEventBus` using the schema defined
-in [MetadataStateChange.schema.json](/docs/schemas/events/metadatamanager/MetadataStateChange.schema.json).
+in [MetadataStateChange.schema.json](./app/schema/events/MetadataStateChange/MetadataStateChange.schema.json).
 
 The event data will adhere to the same schema as the OpenAPI schema without nested object.
 
