@@ -12,8 +12,7 @@ export class EventSchemaConstruct extends Construct {
 
     this.constructSchema({
       name: `${this.SCHEMA_REGISTRY_NAME}@MetadataStateChange`,
-      schemaPath:
-        '../../../../metadata-manager/app/schema/events/MetadataStateChange/MetadataStateChange.schema.json',
+      schemaPath: '../../../../docs/events/MetadataStateChange/MetadataStateChange.schema.json',
       description: 'State change event for lab metadata changes',
     });
   }
