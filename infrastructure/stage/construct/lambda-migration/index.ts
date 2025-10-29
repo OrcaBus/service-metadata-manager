@@ -106,7 +106,7 @@ export class LambdaMigrationConstruct extends Construct {
 
     new Trigger(this, 'ExecuteBackupStepLambdaTrigger', {
       handler: triggerLambda,
-      timeout: Duration.minutes(5),
+      timeout: Duration.minutes(10),
       invocationType: InvocationType.REQUEST_RESPONSE,
     });
   }
