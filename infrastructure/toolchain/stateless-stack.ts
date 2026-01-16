@@ -25,13 +25,13 @@ export class StatelessStack extends cdk.Stack {
           phases: {
             install: {
               'runtime-versions': {
-                python: '3.13',
+                python: '3.12',
               },
             },
           },
           version: '0.2',
         },
-        command: ['cd case-manager', 'make test'],
+        command: ['cd metadata-manager', 'make test'],
       },
     });
   }
