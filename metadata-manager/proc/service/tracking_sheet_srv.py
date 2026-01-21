@@ -248,6 +248,7 @@ def persist_lab_metadata(df: pd.DataFrame, sheet_year: str, is_emit_eb_events: b
                 event_bus_entries.append(format_put_event_entry(event.model_dump_json()))
 
             # link library to its project
+            is_library_project_link_updated = False
             try:
                 library.project_set.get(orcabus_id=project.orcabus_id)
             except ObjectDoesNotExist:
@@ -258,6 +259,7 @@ def persist_lab_metadata(df: pd.DataFrame, sheet_year: str, is_emit_eb_events: b
                 # update/create in previous upsert method
                 if not is_lib_created and not is_lib_updated:
                     stats['library']['update_count'] += 1
+                    is_library_project_link_updated = True
 
             # Based on tracking sheet convention each library only belongs to one project
             # Get all projects currently linked to this library except the one we want to keep
@@ -266,6 +268,10 @@ def persist_lab_metadata(df: pd.DataFrame, sheet_year: str, is_emit_eb_events: b
             if other_projects.exists():
                 library._change_reason = "only allow one project per library"
                 library.project_set.remove(*other_projects)
+
+                if not is_library_project_link_updated:
+                    stats['library']['update_count'] += 1
+                    is_library_project_link_updated = True
 
         except Exception as e:
             if any(record.values()):
