@@ -217,7 +217,8 @@ class TrackingSheetSrvUnitTests(TestCase):
         self.assertIsNotNone(original_lib, "Original library should be created")
         self.assertEqual(original_lib.override_cycles, test_override_cycles, "Latest record is expected to be stored")
 
-        dup_libraries = Library.objects.all().filter(Q(library_id__icontains="_rerun") | Q(library_id__icontains="_topup"))
+        dup_libraries = Library.objects.all().filter(
+            Q(library_id__icontains="_rerun") | Q(library_id__icontains="_topup"))
         self.assertEqual(dup_libraries.count(), 0, "Topup and rerun libraries should NOT exist")
 
     def test_new_df_in_different_year(self) -> None:
@@ -484,7 +485,7 @@ class TrackingSheetSrvUnitTests(TestCase):
             self.assertTrue(
                 is_expected_event_in_output(self, expected=event, output=[json.loads(i.get('Detail')) for i in arg]))
 
-    def test_replace_project(self)->None:
+    def test_replace_project(self) -> None:
         """
         python manage.py test proc.tests.test_tracking_sheet_srv.TrackingSheetSrvUnitTests.test_replace_project
         """
