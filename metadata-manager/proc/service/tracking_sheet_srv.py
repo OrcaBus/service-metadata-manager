@@ -259,6 +259,14 @@ def persist_lab_metadata(df: pd.DataFrame, sheet_year: str, is_emit_eb_events: b
                 if not is_lib_created and not is_lib_updated:
                     stats['library']['update_count'] += 1
 
+            # Based on tracking sheet convention each library only belongs to one project
+            # Get all projects currently linked to this library except the one we want to keep
+            other_projects = library.project_set.exclude(orcabus_id=project.orcabus_id)
+            # Remove all other projects
+            if other_projects.exists():
+                library._change_reason = "only allow one project per library"
+                library.project_set.remove(*other_projects)
+
         except Exception as e:
             if any(record.values()):
                 stats['invalid_record_count'] += 1

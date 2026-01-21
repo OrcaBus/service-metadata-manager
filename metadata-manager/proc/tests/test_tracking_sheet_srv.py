@@ -483,3 +483,33 @@ class TrackingSheetSrvUnitTests(TestCase):
         for event in expected_delete_detail:
             self.assertTrue(
                 is_expected_event_in_output(self, expected=event, output=[json.loads(i.get('Detail')) for i in arg]))
+
+    def test_replace_project(self)->None:
+        """
+        python manage.py test proc.tests.test_tracking_sheet_srv.TrackingSheetSrvUnitTests.test_replace_project
+        """
+
+        metadata_pd = pd.json_normalize([RECORD_1])
+        metadata_pd = sanitize_lab_metadata_df(metadata_pd)
+        persist_lab_metadata(metadata_pd, SHEET_YEAR)
+
+        lib_1 = Library.objects.get(library_id=RECORD_1.get("LibraryID"))
+        prj_1 = lib_1.project_set.get(project_id=RECORD_1.get("ProjectName"))
+        self.assertIsNotNone(prj_1)
+        self.assertEqual(prj_1.project_id, RECORD_1.get("ProjectName"), "incorrect value (ProjectName) stored")
+
+        # Change project name
+        record_1_altered = {
+            **RECORD_1,
+            "ProjectName": "NewProject",
+        }
+
+        metadata_pd = pd.json_normalize([record_1_altered])
+        metadata_pd = sanitize_lab_metadata_df(metadata_pd)
+        persist_lab_metadata(metadata_pd, SHEET_YEAR)
+
+        lib_1_altered = Library.objects.get(library_id=record_1_altered['LibraryID'])
+        prj_1_altered = lib_1_altered.project_set.get(project_id=record_1_altered.get("ProjectName"))
+        self.assertIsNotNone(prj_1_altered)
+        self.assertEqual(prj_1_altered.project_id, record_1_altered.get("ProjectName"),
+                         "incorrect value (ProjectName) stored")
