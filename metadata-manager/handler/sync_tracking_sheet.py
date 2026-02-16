@@ -26,6 +26,9 @@ def handler(event, context):
     is_emit_eb_events: bool = event.get('is_emit_eb_events', True)
     sheet_range: str = event.get('range', None)
 
+    # To track who initiate this sync at the history
+    user_id = event.get('user_id', None)
+
     if sheet_range is None:
         tracking_sheet_df = get_df_tracking_sheet_by_name(sheet_name=year)
     else:
@@ -36,7 +39,7 @@ def handler(event, context):
     clean_df = drop_incomplete_tracking_sheet_records(duplicate_clean_df)
 
     result = persist_lab_metadata(df=clean_df, sheet_year=year, is_emit_eb_events=is_emit_eb_events,
-                                  reason="Google tracking sheet")
+                                  user_id=user_id, reason="Google tracking sheet")
 
     logger.info(f'persist report: {libjson.dumps(result)}')
     return result
