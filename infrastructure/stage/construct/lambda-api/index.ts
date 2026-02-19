@@ -1,6 +1,7 @@
 import { Construct } from 'constructs';
 import { Duration } from 'aws-cdk-lib';
 import { Function } from 'aws-cdk-lib/aws-lambda';
+import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import {
   HttpMethod,
   HttpNoneAuthorizer,
@@ -43,6 +44,9 @@ type LambdaProps = {
 };
 
 export class LambdaAPIConstruct extends Construct {
+  private readonly GDRIVE_CRED_PARAM_NAME = '/umccr/google/drive/lims_service_account_json';
+  private readonly GDRIVE_SHEET_ID_PARAM_NAME = '/umccr/google/drive/tracking_sheet_id';
+
   private readonly lambda: PythonFunction;
   private readonly API_VERSION = 'v1';
 
@@ -129,5 +133,22 @@ export class LambdaAPIConstruct extends Construct {
         HttpMethod.POST
       ),
     });
+
+    // to get the preview records of gsheet lambda would need some cred to access GDrive and these are stored in SSM
+    const trackingSheetCredSSM = StringParameter.fromSecureStringParameterAttributes(
+      this,
+      'GSheetCredSSM',
+      { parameterName: this.GDRIVE_CRED_PARAM_NAME }
+    );
+    this.lambda.addEnvironment('SSM_NAME_GDRIVE_ACCOUNT', this.GDRIVE_CRED_PARAM_NAME);
+    trackingSheetCredSSM.grantRead(this.lambda);
+
+    const trackingSheetIdSSM = StringParameter.fromSecureStringParameterAttributes(
+      this,
+      'TrackingSheetIdSSM',
+      { parameterName: this.GDRIVE_SHEET_ID_PARAM_NAME }
+    );
+    this.lambda.addEnvironment('SSM_NAME_TRACKING_SHEET_ID', this.GDRIVE_SHEET_ID_PARAM_NAME);
+    trackingSheetIdSSM.grantRead(this.lambda);
   }
 }

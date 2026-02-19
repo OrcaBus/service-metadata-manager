@@ -9,11 +9,39 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
-from app.serializers.sync import SyncGSheetSerializer, SyncCustomCsvSerializer
+from app.serializers.sync import SyncGSheetSerializer, SyncCustomCsvSerializer, GsheetRecordsSerializer, \
+    GsheetPreviewRequestSerializer
 from app.viewsets.utils import get_email_from_jwt
+from proc.service.gsheet import get_records_by_sheet_range
 
 
 class SyncViewSet(ViewSet):
+
+    @extend_schema(
+        request=GsheetPreviewRequestSerializer,
+        responses=GsheetRecordsSerializer,
+        description="Preview metadata changes from Google tracking sheet before syncing"
+    )
+    @action(
+        detail=False,
+        methods=['post'],
+        url_name='preview-gsheet',
+        url_path='preview-gsheet'
+    )
+    def preview_gsheet(self, request, *args, **kwargs):
+        serializer = GsheetPreviewRequestSerializer(data=request.data)
+
+        if not serializer.is_valid():
+            return Response(serializer.errors,
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        sheet_name = serializer.data['year']
+        sheet_range = serializer.data['range']
+
+        data = get_records_by_sheet_range(sheet_name=sheet_name, sheet_range=sheet_range)
+
+        serializer = GsheetRecordsSerializer(data)
+        return Response(serializer.data)
 
     @extend_schema(
         request=SyncGSheetSerializer,
@@ -37,12 +65,20 @@ class SyncViewSet(ViewSet):
             return Response(serializer.errors,
                             status=status.HTTP_400_BAD_REQUEST)
 
+        payload = {
+            "year": serializer.data['year']
+        }
+        if serializer.data.get('range', None) is not None:
+            payload['range'] = serializer.data['range']
+
+        requester_email = get_email_from_jwt(request)
+        if requester_email is not None:
+            payload['user_id'] = requester_email
+
         lambda_client().invoke(
             FunctionName=lambda_function_name,
             InvocationType='Event',
-            Payload=json.dumps({
-                "year": serializer.data['year']
-            })
+            Payload=json.dumps(payload)
         )
 
         return Response("Syncing the tracking sheet with the Google Sheet has been initiated.")

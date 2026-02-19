@@ -5,8 +5,8 @@ import pandas as pd
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 
-from libumccr import libgdrive, libjson
-from libumccr.aws import libssm, libeb
+from libumccr import libjson
+from libumccr.aws import libeb
 
 import logging
 
@@ -16,6 +16,7 @@ from app.models.sample import Source
 from app.models.utils import get_value_from_human_readable_label
 from app.serializers import LibrarySerializer
 from app.serializers.utils import to_camel_case_key_dict
+from proc.service.gsheet import get_records_by_sheet_name, get_records_by_sheet_range
 from proc.service.utils import clean_model_history, sanitize_lab_metadata_df, format_put_event_entry
 from app.schema.events.metadata_state_change_model import MetadataStateChange, Action, Model
 
@@ -27,7 +28,8 @@ SSM_NAME_GDRIVE_ACCOUNT = os.getenv('SSM_NAME_GDRIVE_ACCOUNT', '')
 
 
 @transaction.atomic
-def persist_lab_metadata(df: pd.DataFrame, sheet_year: str, is_emit_eb_events: bool = True, reason: str = None):
+def persist_lab_metadata(df: pd.DataFrame, sheet_year: str, is_emit_eb_events: bool = True, user_id: str = None,
+                         reason: str = None):
     """
     Persist metadata records from a pandas dataframe into the db
 
@@ -35,6 +37,7 @@ def persist_lab_metadata(df: pd.DataFrame, sheet_year: str, is_emit_eb_events: b
         df (pd.DataFrame): The source of truth for the metadata in this particular year
         sheet_year (type): The year for the metadata df supplied
         is_emit_eb_events: Emit event bridge events for update/create (only for library records for now)
+        user_id: The user_id or email making this sync request
         reason: The reason for the metadata update
 
     """
@@ -112,7 +115,7 @@ def persist_lab_metadata(df: pd.DataFrame, sheet_year: str, is_emit_eb_events: b
                 data={
                     "individual_id": record.get('subject_id'),
                     "source": "lab"
-                }, change_reason=reason
+                }, user_id=user_id, change_reason=reason
             )
             if is_idv_created:
                 stats['individual']['create_count'] += 1
@@ -126,7 +129,7 @@ def persist_lab_metadata(df: pd.DataFrame, sheet_year: str, is_emit_eb_events: b
                 search_key={"subject_id": record.get('external_subject_id')},
                 data={
                     "subject_id": record.get('external_subject_id'),
-                }, change_reason=reason
+                }, user_id=user_id, change_reason=reason
             )
 
             if is_sub_created:
@@ -155,7 +158,7 @@ def persist_lab_metadata(df: pd.DataFrame, sheet_year: str, is_emit_eb_events: b
                     "sample_id": record.get('sample_id'),
                     "external_sample_id": record.get('external_sample_id'),
                     "source": get_value_from_human_readable_label(Source.choices, record.get('source')),
-                }, change_reason=reason
+                }, user_id=user_id, change_reason=reason
             )
             if is_smp_created:
                 stats['sample']['create_count'] += 1
@@ -169,7 +172,7 @@ def persist_lab_metadata(df: pd.DataFrame, sheet_year: str, is_emit_eb_events: b
                 search_key={"contact_id": record.get('project_owner')},
                 data={
                     "contact_id": record.get('project_owner'),
-                }, change_reason=reason
+                }, user_id=user_id, change_reason=reason
             )
             if is_ctc_created:
                 stats['contact']['create_count'] += 1
@@ -183,7 +186,7 @@ def persist_lab_metadata(df: pd.DataFrame, sheet_year: str, is_emit_eb_events: b
                 search_key={"project_id": record.get('project_name')},
                 data={
                     "project_id": record.get('project_name'),
-                }, change_reason=reason
+                }, user_id=user_id, change_reason=reason
             )
             if is_prj_created:
                 stats['project']['create_count'] += 1
@@ -222,7 +225,7 @@ def persist_lab_metadata(df: pd.DataFrame, sheet_year: str, is_emit_eb_events: b
                     # for foreign key id
                     'sample_id': sample.orcabus_id,
                     'subject_id': subject.orcabus_id,
-                }, change_reason=reason
+                }, user_id=user_id, change_reason=reason
             )
             lib_dict = LibrarySerializer(library).data
 
@@ -297,22 +300,28 @@ def persist_lab_metadata(df: pd.DataFrame, sheet_year: str, is_emit_eb_events: b
     return stats
 
 
-def download_tracking_sheet(year: str) -> pd.DataFrame:
+def get_df_tracking_sheet_by_name(sheet_name: str) -> pd.DataFrame:
     """
     Download the full original metadata from Google tracking sheet
     """
-    sheet_id = libssm.get_secret(SSM_NAME_TRACKING_SHEET_ID)
-    account_info = libssm.get_secret(SSM_NAME_GDRIVE_ACCOUNT)
-
-    frames = []
-    logger.info(f"Downloading {year} sheet")
-    sheet_df = libgdrive.download_sheet(account_info, sheet_id, year)
+    logger.info(f"Get {sheet_name} sheet")
+    sheet_data = get_records_by_sheet_name(sheet_name)
+    sheet_df = pd.DataFrame(sheet_data['values'], columns=sheet_data['columns'])
     sheet_df = sanitize_lab_metadata_df(sheet_df)
 
-    frames.append(sheet_df)
+    return sheet_df
 
-    df: pd.DataFrame = pd.concat(frames)
-    return df
+
+def get_df_tracking_sheet_by_range(sheet_name: str, sheet_range: str) -> pd.DataFrame:
+    """
+    Download the full original metadata from Google tracking sheet
+    """
+    logger.info(f"Get {sheet_name} sheet with range {sheet_range}")
+    sheet_data = get_records_by_sheet_range(sheet_name=sheet_name, sheet_range=sheet_range)
+    sheet_df = pd.DataFrame(sheet_data['values'], columns=sheet_data['columns'])
+    sheet_df = sanitize_lab_metadata_df(sheet_df)
+
+    return sheet_df
 
 
 def drop_incomplete_tracking_sheet_records(df: pd.DataFrame):

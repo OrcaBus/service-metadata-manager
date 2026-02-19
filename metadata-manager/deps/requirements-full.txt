@@ -3,11 +3,3 @@
 -r requirements-slim.txt
 
 pandas==2.3.0
-google-auth==2.40.3
-google-auth-oauthlib==1.2.2
-
-# NOTE:
-# We can't bump `gspread` to v6 yet. As `gspread-pandas` required `gspread>=5.0.0, <6`.
-# We are tracking this at upstream https://github.com/umccr/libumccr/issues/29
-gspread==5.12.4
-gspread-pandas==3.3.0

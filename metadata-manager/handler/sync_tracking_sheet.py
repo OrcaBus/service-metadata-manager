@@ -8,8 +8,8 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'app.settings.base')
 django.setup()
 
 from proc.service.utils import warn_drop_duplicated_library
-from proc.service.tracking_sheet_srv import download_tracking_sheet, sanitize_lab_metadata_df, persist_lab_metadata, \
-    drop_incomplete_tracking_sheet_records
+from proc.service.tracking_sheet_srv import sanitize_lab_metadata_df, persist_lab_metadata, \
+    drop_incomplete_tracking_sheet_records, get_df_tracking_sheet_by_name, get_df_tracking_sheet_by_range
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -24,14 +24,22 @@ def handler(event, context):
         raise ValueError("Year cannot be an array")
 
     is_emit_eb_events: bool = event.get('is_emit_eb_events', True)
+    sheet_range: str = event.get('range', None)
 
-    tracking_sheet_df = download_tracking_sheet(year)
+    # To track who initiate this sync at the history
+    user_id = event.get('user_id', None)
+
+    if sheet_range is None:
+        tracking_sheet_df = get_df_tracking_sheet_by_name(sheet_name=year)
+    else:
+        tracking_sheet_df = get_df_tracking_sheet_by_range(sheet_name=year, sheet_range=sheet_range)
+
     sanitize_df = sanitize_lab_metadata_df(tracking_sheet_df)
     duplicate_clean_df = warn_drop_duplicated_library(sanitize_df)
     clean_df = drop_incomplete_tracking_sheet_records(duplicate_clean_df)
 
     result = persist_lab_metadata(df=clean_df, sheet_year=year, is_emit_eb_events=is_emit_eb_events,
-                                  reason="Google tracking sheet")
+                                  user_id=user_id, reason="Google tracking sheet")
 
     logger.info(f'persist report: {libjson.dumps(result)}')
     return result
