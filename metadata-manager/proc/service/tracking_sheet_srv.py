@@ -78,26 +78,6 @@ def persist_lab_metadata(df: pd.DataFrame, sheet_year: str, is_emit_eb_events: b
         'invalid_record_count': 0,
     }
 
-    # The data frame is to be the source of truth for the particular year
-    # So we need to remove db records which are not in the data frame
-    # Only doing this for library records and (dangling) sample/subject may be removed on a separate process
-    # Note: We do not remove many-to-many relationships if current df has changed
-
-    # For the library_id we need craft the library_id prefix to match the year
-    # E.g. year 2024, library_id prefix is 'L24' as what the Lab tracking sheet convention
-    library_prefix = f'L{sheet_year[-2:]}'
-    for lib in Library.objects.filter(library_id__startswith=library_prefix).exclude(
-            library_id__in=df['library_id'].tolist()).iterator():
-        stats['library']['delete_count'] += 1
-        lib_dict = LibrarySerializer(lib).data
-        event = MetadataStateChange(
-            action=Action.DELETE,
-            model=Model.LIBRARY,
-            refId=lib_dict.get('orcabus_id'),
-            data=to_camel_case_key_dict(lib_dict)
-        )
-        event_bus_entries.append(format_put_event_entry(event.model_dump_json()))
-        lib.delete()
 
     # this the where records are updated, inserted, linked based on library_id
     for record in df.to_dict('records'):
