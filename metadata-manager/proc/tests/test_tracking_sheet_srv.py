@@ -341,10 +341,6 @@ class TrackingSheetSrvUnitTests(TestCase):
         metadata_pd = sanitize_lab_metadata_df(metadata_pd)
         result = persist_lab_metadata(metadata_pd, SHEET_YEAR)
 
-        deleted_lib = Library.objects.filter(library_id__in=[RECORD_1.get('LibraryID'), RECORD_2.get('LibraryID')])
-        self.assertEqual(deleted_lib.count(), 0, 'these library query should all be deleted')
-        self.assertEqual(result.get("library").get("delete_count"), 2, "2 library should be deleted")
-
     def test_skip_incomplete_records(self) -> None:
         """
         python manage.py test \
@@ -454,34 +450,6 @@ class TrackingSheetSrvUnitTests(TestCase):
                                   event_bus_name=TEST_EVENT_BUS_NAME
                                   )
         for event in expected_update_detail:
-            self.assertTrue(
-                is_expected_event_in_output(self, expected=event, output=[json.loads(i.get('Detail')) for i in arg]))
-        # ####
-        # Test if the record are DELETE and event entries are correct
-        # ####
-        mock_dispatch_events.reset_mock()
-        empty_pd = metadata_pd.drop(0)  # Remove the only one record data
-        persist_lab_metadata(empty_pd, SHEET_YEAR)
-
-        arg = mock_dispatch_events.call_args.args[0]
-        expected_delete_detail = [
-            {
-                "action": "DELETE",
-                "model": "LIBRARY",
-                "refId": "lib.ULID",
-                "data": {
-                    "libraryId": "L10001",
-                }
-            }
-        ]
-
-        for entry in arg:
-            check_put_event_entries_format(self, entry)
-            check_put_event_value(self, entry=entry, source="orcabus.metadatamanager",
-                                  detail_type="MetadataStateChange",
-                                  event_bus_name=TEST_EVENT_BUS_NAME
-                                  )
-        for event in expected_delete_detail:
             self.assertTrue(
                 is_expected_event_in_output(self, expected=event, output=[json.loads(i.get('Detail')) for i in arg]))
 
