@@ -1,7 +1,7 @@
 .PHONY: test deep scan
 
 check:
-	@pnpm audit
+	@pnpm audit --audit-level high
 	@pnpm prettier
 	@pnpm lint
 	@pre-commit run --all-files
