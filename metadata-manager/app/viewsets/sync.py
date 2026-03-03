@@ -12,7 +12,7 @@ from rest_framework.viewsets import ViewSet
 from app.serializers.sync import SyncGSheetSerializer, SyncCustomCsvSerializer, GsheetRecordsSerializer, \
     GsheetPreviewRequestSerializer
 from app.viewsets.utils import get_email_from_jwt
-from proc.service.gsheet import get_records_by_sheet_range
+from proc.service.gsheet import get_records_by_sheet_ranges
 
 
 class SyncViewSet(ViewSet):
@@ -36,9 +36,8 @@ class SyncViewSet(ViewSet):
                             status=status.HTTP_400_BAD_REQUEST)
 
         sheet_name = serializer.data['year']
-        sheet_range = serializer.data['range']
-
-        data = get_records_by_sheet_range(sheet_name=sheet_name, sheet_range=sheet_range)
+        sheet_ranges = serializer.data['ranges']
+        data = get_records_by_sheet_ranges(sheet_name=sheet_name, sheet_ranges=sheet_ranges)
 
         serializer = GsheetRecordsSerializer(data)
         return Response(serializer.data)
@@ -68,8 +67,8 @@ class SyncViewSet(ViewSet):
         payload = {
             "year": serializer.data['year']
         }
-        if serializer.data.get('range', None) is not None:
-            payload['range'] = serializer.data['range']
+        if serializer.data.get('ranges', None) is not None:
+            payload['ranges'] = serializer.data['ranges']
 
         requester_email = get_email_from_jwt(request)
         if requester_email is not None:

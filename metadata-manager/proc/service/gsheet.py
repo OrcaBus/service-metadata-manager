@@ -29,31 +29,35 @@ class SheetData(TypedDict):
     values: list[list[str]]
 
 
-def get_records_by_sheet_range(sheet_name: str, sheet_range: str) -> SheetData:
+def get_records_by_sheet_ranges(sheet_name: str, sheet_ranges: list[str]) -> SheetData:
     """
-    Fetch Google Sheet data by range.
+    Fetch Google Sheet data by multiple ranges.
 
     Args:
         sheet_name: Name of the sheet tab (e.g., '2026')
-        sheet_range: Row range excluding header (e.g., '2:994')
+        sheet_ranges: List of row ranges excluding header (e.g., ['2:4', '100:103'])
 
     Returns:
         Dict with 'columns' (headers) and 'values' (data rows)
     """
     sheet, sheet_id = get_gsheet_client()
+    # Always include header row as first range
+    ranges = [f'{sheet_name}!1:1'] + [f'{sheet_name}!{r}' for r in sheet_ranges]
     result = (
         sheet.values()
-        .batchGet(spreadsheetId=sheet_id, ranges=[f'{sheet_name}!1:1', f'{sheet_name}!{sheet_range}'])
+        .batchGet(spreadsheetId=sheet_id, ranges=ranges)
         .execute()
     )
-
     value_ranges = result.get("valueRanges", [])
     columns = value_ranges[0].get("values", [[]])[0]
-    rows = value_ranges[1].get("values", [])
+    all_rows = []
+    for value_range in value_ranges[1:]:
+        rows = value_range.get("values", [])
+        all_rows.extend(rows)
 
     return {
         "columns": columns,
-        "values": _pad_rows(rows, len(columns))
+        "values": _pad_rows(all_rows, len(columns))
     }
 
 

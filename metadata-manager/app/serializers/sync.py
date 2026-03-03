@@ -12,12 +12,12 @@ class GsheetRecordsSerializer(serializers.Serializer):
 
 class GsheetPreviewRequestSerializer(serializers.Serializer):
     year = serializers.CharField(required=True, max_length=4, min_length=4)
-    range = serializers.CharField(required=True)
+    ranges = serializers.ListField(child=serializers.CharField(), required=True)
 
 
 class SyncGSheetSerializer(serializers.Serializer):
     year = serializers.CharField(required=True, max_length=4, min_length=4)
-    range = serializers.CharField(required=False)
+    ranges = serializers.ListField(child=serializers.CharField(), required=False)
 
 
 class SyncCustomCsvSerializer(serializers.Serializer):

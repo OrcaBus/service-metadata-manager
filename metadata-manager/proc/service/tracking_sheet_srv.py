@@ -16,7 +16,7 @@ from app.models.sample import Source
 from app.models.utils import get_value_from_human_readable_label
 from app.serializers import LibrarySerializer
 from app.serializers.utils import to_camel_case_key_dict
-from proc.service.gsheet import get_records_by_sheet_name, get_records_by_sheet_range
+from proc.service.gsheet import get_records_by_sheet_name, get_records_by_sheet_ranges
 from proc.service.utils import clean_model_history, sanitize_lab_metadata_df, format_put_event_entry
 from app.schema.events.metadata_state_change_model import MetadataStateChange, Action, Model
 
@@ -292,12 +292,12 @@ def get_df_tracking_sheet_by_name(sheet_name: str) -> pd.DataFrame:
     return sheet_df
 
 
-def get_df_tracking_sheet_by_range(sheet_name: str, sheet_range: str) -> pd.DataFrame:
+def get_df_tracking_sheet_by_range(sheet_name: str, sheet_ranges: list[str]) -> pd.DataFrame:
     """
     Download the full original metadata from Google tracking sheet
     """
-    logger.info(f"Get {sheet_name} sheet with range {sheet_range}")
-    sheet_data = get_records_by_sheet_range(sheet_name=sheet_name, sheet_range=sheet_range)
+    logger.info(f"Get {sheet_name} sheet with range {sheet_ranges}")
+    sheet_data = get_records_by_sheet_ranges(sheet_name=sheet_name, sheet_ranges=sheet_ranges)
     sheet_df = pd.DataFrame(sheet_data['values'], columns=sheet_data['columns'])
     sheet_df = sanitize_lab_metadata_df(sheet_df)
 
