@@ -24,15 +24,17 @@ def handler(event, context):
         raise ValueError("Year cannot be an array")
 
     is_emit_eb_events: bool = event.get('is_emit_eb_events', True)
-    sheet_range: str = event.get('range', None)
+    sheet_ranges: list[str] = event.get('ranges', None)
 
     # To track who initiate this sync at the history
     user_id = event.get('user_id', None)
 
-    if sheet_range is None:
+    if sheet_ranges is None:
         tracking_sheet_df = get_df_tracking_sheet_by_name(sheet_name=year)
     else:
-        tracking_sheet_df = get_df_tracking_sheet_by_range(sheet_name=year, sheet_range=sheet_range)
+        if not isinstance(sheet_ranges, list):
+            raise ValueError("Range must be a list of strings (row ranges)")
+        tracking_sheet_df = get_df_tracking_sheet_by_range(sheet_name=year, sheet_ranges=sheet_ranges)
 
     sanitize_df = sanitize_lab_metadata_df(tracking_sheet_df)
     duplicate_clean_df = warn_drop_duplicated_library(sanitize_df)
