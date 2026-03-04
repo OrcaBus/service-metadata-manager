@@ -24,7 +24,7 @@ def handler(event, context):
         raise ValueError("Year cannot be an array")
 
     is_emit_eb_events: bool = event.get('is_emit_eb_events', True)
-    sheet_ranges: list[str] = event.get('range', None)
+    sheet_ranges: list[str] = event.get('ranges', None)
 
     # To track who initiate this sync at the history
     user_id = event.get('user_id', None)
