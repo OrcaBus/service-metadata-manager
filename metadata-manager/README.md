@@ -131,9 +131,7 @@ Some important notes of the sync:
 
 1. The sync will only run from the current year.
 2. The tracking sheet is the single source of truth for the current year. Any deletion or update to existing records
-   will be applied based on their internal IDs (e.g. `library_id`, `subject_id`, etc. ). For the library
-   model, the deletion will only occur based on the current year's prefix. For example, syncing the 2024 tracking
-   sheet will only query libraries with `library_id` tarting with `L24` to determine whether to delete it.
+   will be applied based on their internal IDs (e.g. `library_id`, `subject_id`, etc. ).
 3. `LibraryId` is treated as a unique value in the tracking sheet, so for any duplicated value will only recognize
    the last appearance.
 4. In cases where multiple records share the same unique identifier (such as SampleId), only the data from the most

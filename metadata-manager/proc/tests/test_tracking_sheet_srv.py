@@ -341,6 +341,10 @@ class TrackingSheetSrvUnitTests(TestCase):
         metadata_pd = sanitize_lab_metadata_df(metadata_pd)
         result = persist_lab_metadata(metadata_pd, SHEET_YEAR)
 
+        # All 3 libraries must still exist — no deletions
+        self.assertEqual(Library.objects.count(), 3, "all libraries should still exist")
+        self.assertEqual(result['library']['delete_count'], 0)
+
     def test_skip_incomplete_records(self) -> None:
         """
         python manage.py test \
