@@ -152,11 +152,14 @@ export class LambdaAPIConstruct extends Construct {
     trackingSheetIdSSM.grantRead(this.lambda);
 
     // By default, POST routes require explicit access. For this preview lab tracking sheet endpoint,
-    // allow regular JWT users without requiring special explicit permissions.
+    // allow regular JWT users without requiring special explicit permissions, as it only reads from the database.
     new HttpRoute(this, 'PostHttpRouteSyncPreviewGsheet', {
       httpApi: apiGW.httpApi,
       integration: apiIntegration,
-      routeKey: HttpRouteKey.with(`/api/${this.API_VERSION}/sync/preview-gsheet`, HttpMethod.POST),
+      routeKey: HttpRouteKey.with(
+        `/api/${this.API_VERSION}/sync/preview-gsheet/{PROXY+}`,
+        HttpMethod.POST
+      ),
     });
   }
 }
