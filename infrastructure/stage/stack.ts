@@ -10,12 +10,11 @@ import { LambdaMigrationConstruct } from './construct/lambda-migration';
 import { LambdaAPIConstruct } from './construct/lambda-api';
 import { LambdaLoadCustomCSVConstruct } from './construct/lambda-load-custom-csv';
 import { LambdaDjangoCommandConstruct } from './construct/lambda-django-command';
-import { DatabaseCluster } from 'aws-cdk-lib/aws-rds';
+import { ManagedPolicy } from 'aws-cdk-lib/aws-iam';
 import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import {
   DB_CLUSTER_ENDPOINT_HOST_PARAMETER_NAME,
-  DB_CLUSTER_IDENTIFIER,
-  DB_CLUSTER_RESOURCE_ID_PARAMETER_NAME,
+  formatRdsPolicyName,
 } from '@orcabus/platform-cdk-constructs/shared-config/database';
 import { EventSchemaConstruct } from './construct/event-schema';
 
@@ -67,19 +66,15 @@ export class MetadataManagerStack extends Stack {
       compatibleRuntimes: [Runtime.PYTHON_3_12],
     });
 
-    // Grab the database cluster
-    const clusterResourceIdentifier = StringParameter.valueForStringParameter(
-      this,
-      DB_CLUSTER_RESOURCE_ID_PARAMETER_NAME
-    );
     const clusterHostEndpoint = StringParameter.valueForStringParameter(
       this,
       DB_CLUSTER_ENDPOINT_HOST_PARAMETER_NAME
     );
-    const dbCluster = DatabaseCluster.fromDatabaseClusterAttributes(this, 'OrcabusDbCluster', {
-      clusterIdentifier: DB_CLUSTER_IDENTIFIER,
-      clusterResourceIdentifier: clusterResourceIdentifier,
-    });
+    const rdsConnectPolicy = ManagedPolicy.fromManagedPolicyName(
+      this,
+      'RdsConnectPolicy',
+      formatRdsPolicyName(this.METADATA_MANAGER_DB_USER)
+    );
 
     const basicLambdaConfig = {
       entry: path.join(__dirname, '../../metadata-manager'),
@@ -103,36 +98,31 @@ export class MetadataManagerStack extends Stack {
 
     new LambdaMigrationConstruct(this, 'MigrationLambda', {
       basicLambdaConfig: basicLambdaConfig,
-      databaseCluster: dbCluster,
-      databaseName: this.METADATA_MANAGER_DB_NAME,
+      rdsConnectPolicy: rdsConnectPolicy,
       vpc: vpc,
     });
 
     new LambdaDjangoCommandConstruct(this, 'DjangoCommandLambda', {
       basicLambdaConfig: basicLambdaConfig,
-      databaseCluster: dbCluster,
-      databaseName: this.METADATA_MANAGER_DB_NAME,
+      rdsConnectPolicy: rdsConnectPolicy,
     });
 
     const syncGsheetLambda = new LambdaSyncGsheetConstruct(this, 'SyncGsheetLambda', {
       basicLambdaConfig: basicLambdaConfig,
-      databaseCluster: dbCluster,
-      databaseName: this.METADATA_MANAGER_DB_NAME,
+      rdsConnectPolicy: rdsConnectPolicy,
       isDailySync: props.isDailySync,
       eventBusName: props.eventBusName,
     });
 
     const syncCustomCsvLambda = new LambdaLoadCustomCSVConstruct(this, 'CustomCsvLoaderLambda', {
       basicLambdaConfig: basicLambdaConfig,
-      databaseCluster: dbCluster,
-      databaseName: this.METADATA_MANAGER_DB_NAME,
+      rdsConnectPolicy: rdsConnectPolicy,
       eventBusName: props.eventBusName,
     });
 
     new LambdaAPIConstruct(this, 'APILambda', {
       basicLambdaConfig: basicLambdaConfig,
-      databaseCluster: dbCluster,
-      databaseName: this.METADATA_MANAGER_DB_NAME,
+      rdsConnectPolicy: rdsConnectPolicy,
       apiGatewayConstructProps: props.apiGatewayCognitoProps,
       syncCustomCsvLambda: syncCustomCsvLambda.lambda,
       syncGsheetLambda: syncGsheetLambda.lambda,

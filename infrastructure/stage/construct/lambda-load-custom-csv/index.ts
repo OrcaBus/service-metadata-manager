@@ -9,7 +9,7 @@ import {
   DockerImageCode,
 } from 'aws-cdk-lib/aws-lambda';
 import { EventBus } from 'aws-cdk-lib/aws-events';
-import { IDatabaseCluster } from 'aws-cdk-lib/aws-rds';
+import { IManagedPolicy } from 'aws-cdk-lib/aws-iam';
 
 type LambdaProps = {
   /**
@@ -17,13 +17,9 @@ type LambdaProps = {
    */
   basicLambdaConfig: Partial<DockerImageFunctionProps>;
   /**
-   * The db cluster to where the lambda authorize to connect
+   * Managed policy granting `rds-db:connect` on the RDS cluster
    */
-  databaseCluster: IDatabaseCluster;
-  /**
-   * The database name that the lambda will use
-   */
-  databaseName: string;
+  rdsConnectPolicy: IManagedPolicy;
   /**
    * The eventBusName to notify metadata state change
    */
@@ -52,7 +48,7 @@ export class LambdaLoadCustomCSVConstruct extends Construct {
       timeout: Duration.minutes(15),
       memorySize: 4096,
     });
-    lambdaProps.databaseCluster.grantConnect(this.lambda, lambdaProps.databaseName);
+    this.lambda.role?.addManagedPolicy(lambdaProps.rdsConnectPolicy);
 
     // We need to store this lambda ARN somewhere so that we could refer when need to load this manually
     new StringParameter(this, 'LoadCustomCSVLambdaArnParameterStore', {

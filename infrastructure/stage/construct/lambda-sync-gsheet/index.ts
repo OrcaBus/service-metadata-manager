@@ -10,7 +10,7 @@ import {
   DockerImageFunctionProps,
   DockerImageCode,
 } from 'aws-cdk-lib/aws-lambda';
-import { IDatabaseCluster } from 'aws-cdk-lib/aws-rds';
+import { IManagedPolicy } from 'aws-cdk-lib/aws-iam';
 
 type LambdaProps = {
   /**
@@ -18,13 +18,9 @@ type LambdaProps = {
    */
   basicLambdaConfig: Partial<DockerImageFunctionProps>;
   /**
-   * The db cluster to where the lambda authorize to connect
+   * Managed policy granting `rds-db:connect` on the RDS cluster
    */
-  databaseCluster: IDatabaseCluster;
-  /**
-   * The database name that the lambda will use
-   */
-  databaseName: string;
+  rdsConnectPolicy: IManagedPolicy;
   /**
    * If the lambda should run daily sync
    */
@@ -61,7 +57,7 @@ export class LambdaSyncGsheetConstruct extends Construct {
       timeout: Duration.minutes(15),
       memorySize: 4096,
     });
-    lambdaProps.databaseCluster.grantConnect(this.lambda, lambdaProps.databaseName);
+    this.lambda.role?.addManagedPolicy(lambdaProps.rdsConnectPolicy);
 
     // the sync-db lambda would need some cred to access GDrive and these are stored in SSM
     const trackingSheetCredSSM = StringParameter.fromSecureStringParameterAttributes(
