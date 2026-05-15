@@ -206,6 +206,7 @@ def load_metadata_csv(df: pd.DataFrame, is_emit_eb_events: bool = True, user_id:
                     'assay': record.get('assay'),
                     'coverage': sanitize_library_coverage(record.get('coverage')),
                     'override_cycles': record.get('override_cycles'),
+                    'request_form_id': record.get('request_id'),
 
                     # relationships
                     'sample_id': sample.orcabus_id,
@@ -290,7 +291,7 @@ def download_csv_to_pandas(url: str) -> pd.DataFrame:
     """
     Download csv file from a given url and return it as a pandas dataframe
     """
-    return pd.read_csv(url)
+    return pd.read_csv(url, dtype=str)
 
 
 def drop_incomplete_csv_records(df: pd.DataFrame):

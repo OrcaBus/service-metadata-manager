@@ -199,6 +199,7 @@ def persist_lab_metadata(df: pd.DataFrame, sheet_year: str, is_emit_eb_events: b
                     'assay': record.get('assay'),
                     'coverage': sanitize_library_coverage(record.get('coverage')),
                     'override_cycles': record.get('override_cycles'),
+                    'request_form_id': record.get('request_id'),
 
                     # relationships
                     # Although we override the db_column to {MODEL}_orcabus_id, django will still default to {MODEL}_id
