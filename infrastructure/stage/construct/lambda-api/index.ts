@@ -14,7 +14,7 @@ import {
   OrcaBusApiGateway,
   OrcaBusApiGatewayProps,
 } from '@orcabus/platform-cdk-constructs/api-gateway';
-import { IDatabaseCluster } from 'aws-cdk-lib/aws-rds';
+import { IManagedPolicy } from 'aws-cdk-lib/aws-iam';
 
 type LambdaProps = {
   /**
@@ -22,13 +22,9 @@ type LambdaProps = {
    */
   basicLambdaConfig: PythonFunctionProps;
   /**
-   * The db cluster to where the lambda authorize to connect
+   * Managed policy granting `rds-db:connect` on the RDS cluster
    */
-  databaseCluster: IDatabaseCluster;
-  /**
-   * The database name that the lambda will use
-   */
-  databaseName: string;
+  rdsConnectPolicy: IManagedPolicy;
   /**
    * The props for api-gateway
    */
@@ -68,7 +64,7 @@ export class LambdaAPIConstruct extends Construct {
       // https://lambda-power-tuning.show/#gAAAAQACAAQABgAI;ulPPRclpmUU0UHpFIoxhRT3aVkVGyk9F;XJ7INgXRyTZLUMM2DoLGNpPG0DZMo/42
       memorySize: 1024,
     });
-    lambdaProps.databaseCluster.grantConnect(this.lambda, lambdaProps.databaseName);
+    this.lambda.role?.addManagedPolicy(lambdaProps.rdsConnectPolicy);
 
     // add some integration to the http api gw
     const apiIntegration = new HttpLambdaIntegration('ApiLambdaIntegration', this.lambda);
