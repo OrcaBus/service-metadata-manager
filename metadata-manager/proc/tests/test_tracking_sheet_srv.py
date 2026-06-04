@@ -42,7 +42,8 @@ RECORD_1 = {
     "qPCR ID": "L1001_PRJ1001-IN_RUN_1",
     "Sample_ID (SampleSheet)": "PRJ10001_L10001",
     "SampleName": "PRJ10001-IN_RUN_1",
-    "rRNA": ""
+    "rRNA": "",
+    "RequestFormID": "1"
 }
 RECORD_2 = {
     "LibraryID": "L10002",
@@ -67,7 +68,8 @@ RECORD_2 = {
     "qPCR ID": "L10002_PRJ10001-IN_RUN6_2",
     "Sample_ID (SampleSheet)": "L10001_PRJ10002",
     "SampleName": "PRJ10002-IN_RUN_2",
-    "rRNA": ""
+    "rRNA": "",
+    "RequestFormID": "1"
 }
 RECORD_3 = {
     "LibraryID": "L10003",
@@ -92,7 +94,8 @@ RECORD_3 = {
     "qPCR ID": "L10003_PRJ10003-IN_RUN6_2",
     "Sample_ID (SampleSheet)": "L10003_PRJ10003",
     "SampleName": "PRJ10003-IN_RUN_2",
-    "rRNA": ""
+    "rRNA": "",
+    "RequestFormID": "1"
 }
 
 
@@ -486,3 +489,53 @@ class TrackingSheetSrvUnitTests(TestCase):
         self.assertIsNotNone(prj_1_altered)
         self.assertEqual(prj_1_altered.project_id, record_1_altered.get("ProjectName"),
                          "incorrect value (ProjectName) stored")
+
+    def test_request_form_id_is_persisted(self) -> None:
+        """
+        python manage.py test proc.tests.test_tracking_sheet_srv.TrackingSheetSrvUnitTests.test_request_form_id_is_persisted
+        """
+        mock_record = RECORD_1.copy()
+
+        metadata_pd = pd.json_normalize([mock_record])
+        metadata_pd = sanitize_lab_metadata_df(metadata_pd)
+        persist_lab_metadata(metadata_pd, SHEET_YEAR)
+
+        lib = Library.objects.get(library_id=mock_record['LibraryID'])
+        self.assertEqual(lib.request_form_id, '1', "request_form_id should be stored correctly")
+
+    def test_request_form_id_is_updated(self) -> None:
+        """
+        python manage.py test proc.tests.test_tracking_sheet_srv.TrackingSheetSrvUnitTests.test_request_form_id_is_updated
+        """
+        mock_record = RECORD_1.copy()
+        mock_record['RequestFormID'] = ''
+
+        metadata_pd = pd.json_normalize([mock_record])
+        metadata_pd = sanitize_lab_metadata_df(metadata_pd)
+        persist_lab_metadata(metadata_pd, SHEET_YEAR)
+
+        # Update the request_form_id
+        updated_record = mock_record.copy()
+        updated_record['RequestFormID'] = '1'
+
+        metadata_pd = pd.json_normalize([updated_record])
+        metadata_pd = sanitize_lab_metadata_df(metadata_pd)
+        persist_lab_metadata(metadata_pd, SHEET_YEAR)
+
+        lib = Library.objects.get(library_id=mock_record['LibraryID'])
+        self.assertEqual(lib.request_form_id, '1', "request_form_id should be updated to the new value")
+
+    def test_request_form_id_is_none_when_not_provided(self) -> None:
+        """
+        python manage.py test proc.tests.test_tracking_sheet_srv.TrackingSheetSrvUnitTests.test_request_form_id_is_none_when_not_provided
+        """
+        # RECORD_1 has no RequestFormID key — simulates a record without it
+        mock_record = RECORD_1.copy()
+        mock_record['RequestFormID'] = ''
+
+        metadata_pd = pd.json_normalize([mock_record])
+        metadata_pd = sanitize_lab_metadata_df(metadata_pd)
+        persist_lab_metadata(metadata_pd, SHEET_YEAR)
+
+        lib = Library.objects.get(library_id=RECORD_1['LibraryID'])
+        self.assertIsNone(lib.request_form_id, "request_form_id should be None when not provided")
