@@ -1,6 +1,6 @@
 import path from 'path';
 import { Construct } from 'constructs';
-import { Stack, StackProps } from 'aws-cdk-lib';
+import { StackProps } from 'aws-cdk-lib';
 import { Vpc, VpcLookupOptions, SecurityGroup } from 'aws-cdk-lib/aws-ec2';
 import { Code, Runtime, Architecture, LayerVersion } from 'aws-cdk-lib/aws-lambda';
 import { OrcaBusApiGatewayProps } from '@orcabus/platform-cdk-constructs/api-gateway';
@@ -17,6 +17,7 @@ import {
   formatRdsPolicyName,
 } from '@orcabus/platform-cdk-constructs/shared-config/database';
 import { EventSchemaConstruct } from './construct/event-schema';
+import { GitStack } from '@orcabus/platform-cdk-constructs/deployment-stack-pipeline';
 
 export type MetadataManagerStackProps = {
   /**
@@ -41,7 +42,7 @@ export type MetadataManagerStackProps = {
   eventBusName: string;
 };
 
-export class MetadataManagerStack extends Stack {
+export class MetadataManagerStack extends GitStack {
   private readonly METADATA_MANAGER_DB_NAME = 'metadata_manager';
   private readonly METADATA_MANAGER_DB_USER = 'metadata_manager';
 
