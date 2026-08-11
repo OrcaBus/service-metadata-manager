@@ -14,7 +14,7 @@ from app.models import Subject, Sample, Library, Project, Contact, Individual
 from app.models.library import Quality, LibraryType, Phenotype, WorkflowType, sanitize_library_coverage
 from app.models.sample import Source
 from app.models.utils import get_value_from_human_readable_label
-from app.serializers import LibrarySerializer
+from app.serializers.library import LibraryDetailSerializer
 from app.serializers.utils import to_camel_case_key_dict
 from proc.service.gsheet import get_records_by_sheet_name, get_records_by_sheet_ranges
 from proc.service.utils import clean_model_history, sanitize_lab_metadata_df, format_put_event_entry
@@ -208,7 +208,7 @@ def persist_lab_metadata(df: pd.DataFrame, sheet_year: str, is_emit_eb_events: b
                     'subject_id': subject.orcabus_id,
                 }, user_id=user_id, change_reason=reason
             )
-            lib_dict = LibrarySerializer(library).data
+            lib_dict = LibraryDetailSerializer(library).data
 
             if is_lib_created:
                 stats['library']['create_count'] += 1
