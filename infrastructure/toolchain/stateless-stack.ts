@@ -25,7 +25,8 @@ export class StatelessStack extends cdk.Stack {
           phases: {
             install: {
               'runtime-versions': {
-                python: '3.12',
+                python: '3.13',
+                nodejs: '22.x',
               },
             },
           },
