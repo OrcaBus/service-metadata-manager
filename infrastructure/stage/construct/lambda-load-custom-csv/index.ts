@@ -1,7 +1,6 @@
 import path from 'path';
 import { Construct } from 'constructs';
 import { Duration } from 'aws-cdk-lib';
-import { PythonFunction } from '@aws-cdk/aws-lambda-python-alpha';
 import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import {
   DockerImageFunction,
@@ -27,7 +26,7 @@ type LambdaProps = {
 };
 
 export class LambdaLoadCustomCSVConstruct extends Construct {
-  readonly lambda: PythonFunction;
+  readonly lambda: DockerImageFunction;
 
   constructor(scope: Construct, id: string, lambdaProps: LambdaProps) {
     super(scope, id);

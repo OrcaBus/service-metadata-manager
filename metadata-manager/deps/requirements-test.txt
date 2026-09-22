@@ -1,4 +1,4 @@
--r requirements-full.txt
+-r requirements.txt
 
 # Intentionally leave out the boto3 version here. They bump like daily and latest is always fine.
 boto3

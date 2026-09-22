@@ -1,7 +1,6 @@
 import path from 'path';
 import { Construct } from 'constructs';
 import { Duration } from 'aws-cdk-lib';
-import { PythonFunction } from '@aws-cdk/aws-lambda-python-alpha';
 import {
   DockerImageFunction,
   DockerImageFunctionProps,
@@ -21,7 +20,7 @@ type LambdaProps = {
 };
 
 export class LambdaDjangoCommandConstruct extends Construct {
-  readonly lambda: PythonFunction;
+  readonly lambda: DockerImageFunction;
 
   constructor(scope: Construct, id: string, lambdaProps: LambdaProps) {
     super(scope, id);

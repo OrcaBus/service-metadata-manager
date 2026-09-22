@@ -1,6 +1,12 @@
+import path from 'path';
 import { Construct } from 'constructs';
 import { Duration } from 'aws-cdk-lib';
-import { Function } from 'aws-cdk-lib/aws-lambda';
+import {
+  DockerImageCode,
+  DockerImageFunction,
+  DockerImageFunctionProps,
+  Function,
+} from 'aws-cdk-lib/aws-lambda';
 import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import {
   HttpMethod,
@@ -8,7 +14,6 @@ import {
   HttpRoute,
   HttpRouteKey,
 } from 'aws-cdk-lib/aws-apigatewayv2';
-import { PythonFunction, PythonFunctionProps } from '@aws-cdk/aws-lambda-python-alpha';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import {
   OrcaBusApiGateway,
@@ -20,7 +25,7 @@ type LambdaProps = {
   /**
    * The basic common lambda properties that it should inherit from
    */
-  basicLambdaConfig: PythonFunctionProps;
+  basicLambdaConfig: Partial<DockerImageFunctionProps>;
   /**
    * Managed policy granting `rds-db:connect` on the RDS cluster
    */
@@ -43,7 +48,7 @@ export class LambdaAPIConstruct extends Construct {
   private readonly GDRIVE_CRED_PARAM_NAME = '/umccr/google/drive/lims_service_account_json';
   private readonly GDRIVE_SHEET_ID_PARAM_NAME = '/umccr/google/drive/tracking_sheet_id';
 
-  private readonly lambda: PythonFunction;
+  private readonly lambda: DockerImageFunction;
   private readonly API_VERSION = 'v1';
 
   constructor(scope: Construct, id: string, lambdaProps: LambdaProps) {
@@ -55,10 +60,17 @@ export class LambdaAPIConstruct extends Construct {
       lambdaProps.apiGatewayConstructProps
     );
 
-    this.lambda = new PythonFunction(this, 'APILambda', {
-      ...lambdaProps.basicLambdaConfig,
-      index: 'handler/api.py',
-      handler: 'handler',
+    this.lambda = new DockerImageFunction(this, 'APILambda', {
+      environment: {
+        ...lambdaProps.basicLambdaConfig.environment,
+      },
+      securityGroups: lambdaProps.basicLambdaConfig.securityGroups,
+      vpc: lambdaProps.basicLambdaConfig.vpc,
+      vpcSubnets: lambdaProps.basicLambdaConfig.vpcSubnets,
+      architecture: lambdaProps.basicLambdaConfig.architecture,
+      code: DockerImageCode.fromImageAsset(path.join(__dirname, '../../../../'), {
+        file: 'infrastructure/stage/construct/lambda-api/lambda.Dockerfile',
+      }),
       timeout: Duration.seconds(28),
       // The optimum memory from lambda power tuning tool (Result based on enforcing cold start)
       // https://lambda-power-tuning.show/#gAAAAQACAAQABgAI;ulPPRclpmUU0UHpFIoxhRT3aVkVGyk9F;XJ7INgXRyTZLUMM2DoLGNpPG0DZMo/42

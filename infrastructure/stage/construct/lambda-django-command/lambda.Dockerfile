@@ -6,7 +6,7 @@ WORKDIR ${LAMBDA_TASK_ROOT}
 COPY ./metadata-manager .
 
 # Install the specified packages
-RUN pip install -r deps/requirements-full.txt
+RUN pip install -r deps/requirements.txt
 
 # Specify handler
 CMD [ "handler.django_command.handler" ]

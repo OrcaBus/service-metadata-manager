@@ -9,4 +9,4 @@ COPY ./metadata-manager .
 RUN pip install -r deps/requirements.txt
 
 # Specify handler
-CMD [ "handler.load_custom_metadata_csv.handler" ]
+CMD [ "handler.api.handler" ]

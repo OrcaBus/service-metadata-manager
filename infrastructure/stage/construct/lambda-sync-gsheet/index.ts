@@ -1,7 +1,6 @@
 import path from 'path';
 import { Construct } from 'constructs';
 import { Duration } from 'aws-cdk-lib';
-import { PythonFunction } from '@aws-cdk/aws-lambda-python-alpha';
 import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { Rule, Schedule, EventBus } from 'aws-cdk-lib/aws-events';
 import { LambdaFunction } from 'aws-cdk-lib/aws-events-targets';
@@ -35,7 +34,7 @@ export class LambdaSyncGsheetConstruct extends Construct {
   private readonly GDRIVE_CRED_PARAM_NAME = '/umccr/google/drive/lims_service_account_json';
   private readonly GDRIVE_SHEET_ID_PARAM_NAME = '/umccr/google/drive/tracking_sheet_id';
 
-  readonly lambda: PythonFunction;
+  readonly lambda: DockerImageFunction;
 
   constructor(scope: Construct, id: string, lambdaProps: LambdaProps) {
     super(scope, id);
