@@ -7,6 +7,7 @@ import {
   DockerImageCode,
 } from 'aws-cdk-lib/aws-lambda';
 import { IManagedPolicy } from 'aws-cdk-lib/aws-iam';
+import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
 
 type LambdaProps = {
   /**
@@ -35,6 +36,7 @@ export class LambdaDjangoCommandConstruct extends Construct {
       architecture: lambdaProps.basicLambdaConfig.architecture,
       code: DockerImageCode.fromImageAsset(path.join(__dirname, '../../../../'), {
         file: 'infrastructure/stage/construct/lambda-django-command/lambda.Dockerfile',
+        platform: Platform.LINUX_ARM64,
       }),
       timeout: Duration.minutes(15),
       memorySize: 4096,

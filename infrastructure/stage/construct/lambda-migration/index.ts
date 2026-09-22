@@ -23,6 +23,7 @@ import {
   DockerImageFunctionProps,
 } from 'aws-cdk-lib/aws-lambda';
 import path from 'path';
+import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
 
 type LambdaProps = {
   /**
@@ -54,6 +55,7 @@ export class LambdaMigrationConstruct extends Construct {
       architecture: props.basicLambdaConfig.architecture,
       code: DockerImageCode.fromImageAsset(path.join(__dirname, '../../../../'), {
         file: 'infrastructure/stage/construct/lambda-migration/lambda.Dockerfile',
+        platform: Platform.LINUX_ARM64,
       }),
       timeout: Duration.minutes(5),
       memorySize: 1024,

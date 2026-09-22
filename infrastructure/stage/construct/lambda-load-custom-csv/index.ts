@@ -9,6 +9,7 @@ import {
 } from 'aws-cdk-lib/aws-lambda';
 import { EventBus } from 'aws-cdk-lib/aws-events';
 import { IManagedPolicy } from 'aws-cdk-lib/aws-iam';
+import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
 
 type LambdaProps = {
   /**
@@ -43,6 +44,7 @@ export class LambdaLoadCustomCSVConstruct extends Construct {
       architecture: lambdaProps.basicLambdaConfig.architecture,
       code: DockerImageCode.fromImageAsset(path.join(__dirname, '../../../../'), {
         file: 'infrastructure/stage/construct/lambda-load-custom-csv/lambda.Dockerfile',
+        platform: Platform.LINUX_ARM64,
       }),
       timeout: Duration.minutes(15),
       memorySize: 4096,
