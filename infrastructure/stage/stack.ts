@@ -1,8 +1,7 @@
-import path from 'path';
 import { Construct } from 'constructs';
 import { StackProps } from 'aws-cdk-lib';
 import { Vpc, VpcLookupOptions, SecurityGroup } from 'aws-cdk-lib/aws-ec2';
-import { Code, Runtime, Architecture, LayerVersion } from 'aws-cdk-lib/aws-lambda';
+import { Architecture } from 'aws-cdk-lib/aws-lambda';
 import { OrcaBusApiGatewayProps } from '@orcabus/platform-cdk-constructs/api-gateway';
 
 import { LambdaSyncGsheetConstruct } from './construct/lambda-sync-gsheet';
@@ -57,16 +56,6 @@ export class MetadataManagerStack extends GitStack {
       vpc
     );
 
-    // despite of multiple lambda all of them will share the same dependencies
-    const dependencySlimLayer = new LayerVersion(this, 'DependenciesLayer', {
-      code: Code.fromDockerBuild(__dirname + '/../../', {
-        file: 'metadata-manager/deps/requirements-slim.Dockerfile',
-        imagePath: 'home/output',
-      }),
-      compatibleArchitectures: [Architecture.ARM_64],
-      compatibleRuntimes: [Runtime.PYTHON_3_12],
-    });
-
     const clusterHostEndpoint = StringParameter.valueForStringParameter(
       this,
       DB_CLUSTER_ENDPOINT_HOST_PARAMETER_NAME
@@ -78,12 +67,6 @@ export class MetadataManagerStack extends GitStack {
     );
 
     const basicLambdaConfig = {
-      entry: path.join(__dirname, '../../metadata-manager'),
-      runtime: Runtime.PYTHON_3_12,
-      layers: [dependencySlimLayer],
-      bundling: {
-        assetExcludes: ['*__pycache__*', '*.DS_Store*', '*.idea*', '*.venv*'],
-      },
       environment: {
         DJANGO_SETTINGS_MODULE: 'app.settings.aws',
         PG_HOST: clusterHostEndpoint,

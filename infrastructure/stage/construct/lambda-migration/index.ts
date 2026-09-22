@@ -1,6 +1,5 @@
 import { Construct } from 'constructs';
 import { Duration } from 'aws-cdk-lib';
-import { PythonFunction, PythonFunctionProps } from '@aws-cdk/aws-lambda-python-alpha';
 import { IVpc } from 'aws-cdk-lib/aws-ec2';
 import { InvocationType, Trigger } from 'aws-cdk-lib/triggers';
 import { IManagedPolicy } from 'aws-cdk-lib/aws-iam';
@@ -17,14 +16,20 @@ import {
   LambdaInvoke,
   StepFunctionsStartExecution,
 } from 'aws-cdk-lib/aws-stepfunctions-tasks';
-import { Architecture, DockerImageCode, DockerImageFunction } from 'aws-cdk-lib/aws-lambda';
+import {
+  Architecture,
+  DockerImageCode,
+  DockerImageFunction,
+  DockerImageFunctionProps,
+} from 'aws-cdk-lib/aws-lambda';
 import path from 'path';
+import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
 
 type LambdaProps = {
   /**
    * The basic common lambda properties that it should inherit from
    */
-  basicLambdaConfig: PythonFunctionProps;
+  basicLambdaConfig: Partial<DockerImageFunctionProps>;
   /**
    * Managed policy granting `rds-db:connect` on the RDS cluster
    */
@@ -40,11 +45,20 @@ export class LambdaMigrationConstruct extends Construct {
     super(scope, id);
 
     // Lambda to perform migration
-    const migrationLambda = new PythonFunction(this, 'MigrationLambda', {
-      ...props.basicLambdaConfig,
-      index: 'handler/migrate.py',
-      handler: 'handler',
+    const migrationLambda = new DockerImageFunction(this, 'MigrationLambda', {
+      environment: {
+        ...props.basicLambdaConfig.environment,
+      },
+      securityGroups: props.basicLambdaConfig.securityGroups,
+      vpc: props.basicLambdaConfig.vpc,
+      vpcSubnets: props.basicLambdaConfig.vpcSubnets,
+      architecture: props.basicLambdaConfig.architecture,
+      code: DockerImageCode.fromImageAsset(path.join(__dirname, '../../../../'), {
+        file: 'infrastructure/stage/construct/lambda-migration/lambda.Dockerfile',
+        platform: Platform.LINUX_ARM64,
+      }),
       timeout: Duration.minutes(5),
+      memorySize: 1024,
     });
     migrationLambda.role?.addManagedPolicy(props.rdsConnectPolicy);
 

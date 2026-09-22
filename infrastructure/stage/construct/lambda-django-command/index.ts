@@ -1,13 +1,13 @@
 import path from 'path';
 import { Construct } from 'constructs';
 import { Duration } from 'aws-cdk-lib';
-import { PythonFunction } from '@aws-cdk/aws-lambda-python-alpha';
 import {
   DockerImageFunction,
   DockerImageFunctionProps,
   DockerImageCode,
 } from 'aws-cdk-lib/aws-lambda';
 import { IManagedPolicy } from 'aws-cdk-lib/aws-iam';
+import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
 
 type LambdaProps = {
   /**
@@ -21,7 +21,7 @@ type LambdaProps = {
 };
 
 export class LambdaDjangoCommandConstruct extends Construct {
-  readonly lambda: PythonFunction;
+  readonly lambda: DockerImageFunction;
 
   constructor(scope: Construct, id: string, lambdaProps: LambdaProps) {
     super(scope, id);
@@ -36,6 +36,7 @@ export class LambdaDjangoCommandConstruct extends Construct {
       architecture: lambdaProps.basicLambdaConfig.architecture,
       code: DockerImageCode.fromImageAsset(path.join(__dirname, '../../../../'), {
         file: 'infrastructure/stage/construct/lambda-django-command/lambda.Dockerfile',
+        platform: Platform.LINUX_ARM64,
       }),
       timeout: Duration.minutes(15),
       memorySize: 4096,

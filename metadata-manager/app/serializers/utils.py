@@ -1,8 +1,11 @@
 
 
-def to_camel_case_key_dict(data: dict) -> dict:
+def to_camel_case_key_dict(data):
     """
-    Convert dictionary keys from snake_case to camelCase.
+    Recursively convert dictionary keys from snake_case to camelCase.
+
+    Handles nested dicts and lists of dicts (e.g. DRF `many=True` relations).
+    Non-dict/list values are returned unchanged.
     """
 
     def snake_to_camel(word):
@@ -11,11 +14,14 @@ def to_camel_case_key_dict(data: dict) -> dict:
         # with the 'title' method and join them together.
         return components[0] + ''.join(x.title() for x in components[1:])
 
-    new_data = {}
-    for key, value in data.items():
-        new_key = snake_to_camel(key)
-        new_data[new_key] = value
-    return new_data
+    if isinstance(data, dict):
+        return {
+            snake_to_camel(key): to_camel_case_key_dict(value)
+            for key, value in data.items()
+        }
+    if isinstance(data, list):
+        return [to_camel_case_key_dict(item) for item in data]
+    return data
 
 
 class OrcabusIdSerializerMetaMixin:

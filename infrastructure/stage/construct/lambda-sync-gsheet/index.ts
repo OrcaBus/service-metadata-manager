@@ -1,7 +1,6 @@
 import path from 'path';
 import { Construct } from 'constructs';
 import { Duration } from 'aws-cdk-lib';
-import { PythonFunction } from '@aws-cdk/aws-lambda-python-alpha';
 import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { Rule, Schedule, EventBus } from 'aws-cdk-lib/aws-events';
 import { LambdaFunction } from 'aws-cdk-lib/aws-events-targets';
@@ -11,6 +10,7 @@ import {
   DockerImageCode,
 } from 'aws-cdk-lib/aws-lambda';
 import { IManagedPolicy } from 'aws-cdk-lib/aws-iam';
+import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
 
 type LambdaProps = {
   /**
@@ -35,7 +35,7 @@ export class LambdaSyncGsheetConstruct extends Construct {
   private readonly GDRIVE_CRED_PARAM_NAME = '/umccr/google/drive/lims_service_account_json';
   private readonly GDRIVE_SHEET_ID_PARAM_NAME = '/umccr/google/drive/tracking_sheet_id';
 
-  readonly lambda: PythonFunction;
+  readonly lambda: DockerImageFunction;
 
   constructor(scope: Construct, id: string, lambdaProps: LambdaProps) {
     super(scope, id);
@@ -53,6 +53,7 @@ export class LambdaSyncGsheetConstruct extends Construct {
       architecture: lambdaProps.basicLambdaConfig.architecture,
       code: DockerImageCode.fromImageAsset(path.join(__dirname, '../../../../'), {
         file: 'infrastructure/stage/construct/lambda-sync-gsheet/lambda.Dockerfile',
+        platform: Platform.LINUX_ARM64,
       }),
       timeout: Duration.minutes(15),
       memorySize: 4096,
