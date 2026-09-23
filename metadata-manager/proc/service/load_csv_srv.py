@@ -209,7 +209,7 @@ def load_metadata_csv(df: pd.DataFrame, is_emit_eb_events: bool = True, user_id:
                     'request_form_id': record.get('request_form_id'),
 
                     # relationships
-                    'sample_id': sample.orcabus_id,
+                    'sample_id': sample.orcabus_id if sample else None,
                     'subject_id': subject.orcabus_id,
                 }, user_id=user_id, change_reason=reason
             )
