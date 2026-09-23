@@ -38,6 +38,8 @@ below:
 
 All asterisked (\*) header are required fields to process a record.
 
+`external_sample_id` requires `sample_id` to be present; it cannot be provided on its own.
+
 - The CSV file must be accessible via a **presigned URL** (e.g., from S3 or GitHub).
 - Ensure the file is tracked in your storage (e.g., upload to S3 or GitHub).
 
