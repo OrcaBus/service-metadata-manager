@@ -195,10 +195,24 @@ def load_metadata_csv(df: pd.DataFrame, is_emit_eb_events: bool = True, user_id:
             # ------------------------------
             # Library: Upsert library record with related sample, subject, project
             # ------------------------------
+            # A library must be linked to an existing sample and subject. Validate here so we can raise a
+            # descriptive error instead of an obscure 'NoneType has no attribute orcabus_id' further down.
+            library_id = record.get('library_id')
+            if sample is None:
+                raise ValueError(
+                    f"Sample does not exist for library_id '{library_id}': "
+                    f"missing or empty 'sample_id' in record."
+                )
+            if subject is None:
+                raise ValueError(
+                    f"Subject does not exist for library_id '{library_id}': "
+                    f"missing or empty 'subject_id' in record."
+                )
+
             library, is_lib_created, is_lib_updated = Library.objects.update_or_create_if_needed(
-                search_key={"library_id": record.get('library_id')},
+                search_key={"library_id": library_id},
                 data={
-                    'library_id': record.get('library_id'),
+                    'library_id': library_id,
                     'phenotype': get_value_from_human_readable_label(Phenotype.choices, record.get('phenotype')),
                     'workflow': get_value_from_human_readable_label(WorkflowType.choices, record.get('workflow')),
                     'quality': get_value_from_human_readable_label(Quality.choices, record.get('quality')),
