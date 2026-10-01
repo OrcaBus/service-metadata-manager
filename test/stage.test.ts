@@ -2,19 +2,24 @@ import { App, Aspects, Stack } from 'aws-cdk-lib';
 import { Annotations, Match } from 'aws-cdk-lib/assertions';
 import { SynthesisMessage } from 'aws-cdk-lib/cx-api';
 import { AwsSolutionsChecks, NagSuppressions } from 'cdk-nag';
+import { SHARED_SECURITY_GROUP_NAME } from '@orcabus/platform-cdk-constructs/shared-config/networking';
 import { MetadataManagerStack } from '../infrastructure/stage/stack';
 import { getStackProps } from '../infrastructure/stage/config';
+import { mockVpcContext } from './utils';
 
 function synthesisMessageToString(sm: SynthesisMessage): string {
   return `${sm.entry.data} [${sm.id}]`;
 }
 
 describe('cdk-nag-stateless-toolchain-stack', () => {
+  const account = '111111111111';
+  const region = 'ap-southeast-2';
   const app = new App({});
+  mockVpcContext(app, account, region, SHARED_SECURITY_GROUP_NAME);
 
   // You should configure all stack (sateless, stateful) to be tested
   const deployStack = new MetadataManagerStack(app, 'DeployStack', {
-    env: { account: '111111111111', region: 'ap-southeast-2' },
+    env: { account, region },
     ...getStackProps('PROD'),
   });
 
