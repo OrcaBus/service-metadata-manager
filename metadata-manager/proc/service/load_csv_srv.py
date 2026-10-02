@@ -1,5 +1,13 @@
+import io
 import json
 import logging
+import os
+import urllib.parse
+import urllib.request
+import uuid
+from datetime import datetime, timezone
+
+import boto3
 import pandas as pd
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
@@ -301,11 +309,84 @@ def load_metadata_csv(df: pd.DataFrame, is_emit_eb_events: bool = True, user_id:
     return stats
 
 
+def download_csv_raw_bytes(url: str) -> bytes:
+    """
+    Download the raw csv file content from a given (e.g. presigned) url.
+    """
+    with urllib.request.urlopen(url) as response:
+        return response.read()
+
+
 def download_csv_to_pandas(url: str) -> pd.DataFrame:
     """
     Download csv file from a given url and return it as a pandas dataframe
     """
     return pd.read_csv(url, dtype=str)
+
+
+def parse_raw_csv_to_pandas(raw_csv: bytes) -> pd.DataFrame:
+    """
+    Parse an already downloaded raw csv (bytes) into a pandas dataframe.
+    """
+    return pd.read_csv(io.BytesIO(raw_csv), dtype=str)
+
+
+DEFAULT_CSV_FILENAME = 'metadata.csv'
+
+
+def resolve_csv_filename(source_url: str) -> str:
+    """
+    Best-effort attempt to recover the original csv filename from its source url.
+
+    The url is not guaranteed to be a presigned S3 url or to follow any particular convention
+    (it could be any arbitrary download link), so a filename is not guaranteed to be present at
+    all. This takes the last path segment as the filename when one exists, and falls back to a
+    generic default when the path is empty (e.g. a bare domain or an API endpoint that only
+    carries an id via query params).
+    """
+    path = urllib.parse.urlparse(source_url).path
+    candidate = os.path.basename(path.rstrip('/'))
+    return candidate or DEFAULT_CSV_FILENAME
+
+
+def archive_raw_csv_to_s3(raw_csv: bytes, source_url: str, user_id: str = None) -> str:
+    """
+    Store a raw copy of an ingested metadata csv into a controlled S3 bucket for traceability.
+
+    This archival step is mandatory: every ingested csv must have a raw copy stored in-house. If
+    the bucket is not configured, or the upload fails for any reason, this raises so that metadata
+    ingestion does not proceed without an archived copy.
+
+    Args:
+        raw_csv: the raw csv file content as downloaded, unmodified
+        source_url: the url the csv was downloaded from, used to recover the original filename
+        user_id: the user_id or email that triggered this ingestion, used to namespace the object key
+
+    Returns:
+        The S3 object key the raw csv was stored under.
+    """
+    bucket_name = os.environ.get('RAW_METADATA_CSV_BUCKET_NAME')
+    if not bucket_name:
+        raise RuntimeError('RAW_METADATA_CSV_BUCKET_NAME is not configured, cannot archive raw csv')
+
+    now = datetime.now(timezone.utc)
+    safe_user_id = (user_id or 'unknown').replace('/', '_')
+    original_filename = resolve_csv_filename(source_url)
+    object_key = (
+        f"{now.strftime('%Y%m%dT%H%M%S%f')}Z-{uuid.uuid4().hex[:8]}-{safe_user_id}-{original_filename}"
+    )
+
+    try:
+        boto3.client('s3').put_object(
+            Bucket=bucket_name,
+            Key=object_key,
+            Body=raw_csv,
+            ContentType='text/csv',
+        )
+        logger.info(f'Archived raw metadata csv to s3://{bucket_name}/{object_key}')
+        return object_key
+    except Exception as e:
+        raise RuntimeError(f'Failed to archive raw metadata csv to S3: {e}') from e
 
 
 def drop_incomplete_csv_records(df: pd.DataFrame):
