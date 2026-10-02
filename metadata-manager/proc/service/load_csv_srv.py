@@ -4,7 +4,6 @@ import logging
 import os
 import urllib.parse
 import urllib.request
-import uuid
 from datetime import datetime, timezone
 
 import boto3
