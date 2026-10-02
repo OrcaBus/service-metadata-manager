@@ -1,8 +1,9 @@
 import { Construct } from 'constructs';
-import { StackProps } from 'aws-cdk-lib';
+import { RemovalPolicy, StackProps } from 'aws-cdk-lib';
 import { Vpc, VpcLookupOptions, SecurityGroup } from 'aws-cdk-lib/aws-ec2';
 import { Architecture } from 'aws-cdk-lib/aws-lambda';
 import { OrcaBusApiGatewayProps } from '@orcabus/platform-cdk-constructs/api-gateway';
+import { BlockPublicAccess, Bucket, BucketEncryption } from 'aws-cdk-lib/aws-s3';
 
 import { LambdaSyncGsheetConstruct } from './construct/lambda-sync-gsheet';
 import { LambdaMigrationConstruct } from './construct/lambda-migration';
@@ -98,10 +99,23 @@ export class MetadataManagerStack extends GitStack {
       eventBusName: props.eventBusName,
     });
 
+    // Bucket to keep a raw, in-house copy of every ingested custom metadata csv for traceability.
+    // Ideally this would live in a separate stateful stack (like the RDS cluster), since it holds
+    // durable archival data. Kept here for simplicity, similar to how CloudWatch log groups are
+    // often colocated with the stateless resources that write to them. Retained on stack deletion
+    // so archival data isn't lost.
+    const rawCsvArchiveBucket = new Bucket(this, 'RawMetadataCsvArchiveBucket', {
+      encryption: BucketEncryption.S3_MANAGED,
+      blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
+      enforceSSL: true,
+      removalPolicy: RemovalPolicy.RETAIN,
+    });
+
     const syncCustomCsvLambda = new LambdaLoadCustomCSVConstruct(this, 'CustomCsvLoaderLambda', {
       basicLambdaConfig: basicLambdaConfig,
       rdsConnectPolicy: rdsConnectPolicy,
       eventBusName: props.eventBusName,
+      rawCsvArchiveBucket: rawCsvArchiveBucket,
     });
 
     new LambdaAPIConstruct(this, 'APILambda', {

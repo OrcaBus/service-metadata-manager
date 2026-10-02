@@ -101,4 +101,16 @@ function applyNagSuppression(stack: Stack) {
     ],
     true
   );
+
+  NagSuppressions.addResourceSuppressionsByPath(
+    stack,
+    '/DeployStack/RawMetadataCsvArchiveBucket/Resource',
+    [
+      {
+        id: 'AwsSolutions-S1',
+        reason: 'Server access logging is not required for this raw metadata csv archive bucket.',
+      },
+    ],
+    true
+  );
 }

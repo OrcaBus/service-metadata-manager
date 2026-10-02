@@ -8,7 +8,13 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'app.settings.base')
 django.setup()
 
 from proc.service.utils import sanitize_lab_metadata_df, warn_drop_duplicated_library
-from proc.service.load_csv_srv import load_metadata_csv, download_csv_to_pandas, drop_incomplete_csv_records
+from proc.service.load_csv_srv import (
+    load_metadata_csv,
+    drop_incomplete_csv_records,
+    download_csv_raw_bytes,
+    parse_raw_csv_to_pandas,
+    archive_raw_csv_to_s3,
+)
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -29,7 +35,11 @@ def handler(event, _context):
 
     is_emit_eb_events: bool = event.get('is_emit_eb_events', True)
 
-    csv_df = download_csv_to_pandas(csv_url)
+    # Download the csv once, keep a raw in-house copy for traceability, then parse it.
+    raw_csv = download_csv_raw_bytes(csv_url)
+    archive_raw_csv_to_s3(raw_csv, source_url=csv_url, user_id=user_id)
+
+    csv_df = parse_raw_csv_to_pandas(raw_csv)
     sanitize_df = sanitize_lab_metadata_df(csv_df)
     duplicate_clean_df = warn_drop_duplicated_library(sanitize_df)
     clean_df = drop_incomplete_csv_records(duplicate_clean_df)
