@@ -372,9 +372,7 @@ def archive_raw_csv_to_s3(raw_csv: bytes, source_url: str, user_id: str = None) 
     now = datetime.now(timezone.utc)
     safe_user_id = (user_id or 'unknown').replace('/', '_')
     original_filename = resolve_csv_filename(source_url)
-    object_key = (
-        f"{now.strftime('%Y%m%dT%H%M%S%f')}Z-{uuid.uuid4().hex[:8]}-{safe_user_id}-{original_filename}"
-    )
+    object_key = f"{now.strftime('%Y%m%dT%H%M%S%f')}Z-{safe_user_id}-{original_filename}"
 
     try:
         boto3.client('s3').put_object(
