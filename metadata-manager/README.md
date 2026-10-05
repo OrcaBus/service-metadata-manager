@@ -145,6 +145,10 @@ Please refer to the [tracking-sheet-service](proc/service/tracking_sheet_srv.py)
 
 For the manual sync procedure, see [MM.1-SyncExternalMetadata.md](../docs/operation/sop/MM.1/MM.1-SyncExternalMetadata.md).
 
+Before parsing, every ingested CSV is archived unmodified to an S3 bucket (`RAW_METADATA_CSV_BUCKET_NAME`) for
+traceability, keyed as `<timestamp>-<user_id>-<filename>`. This is mandatory — if the upload fails, the sync fails
+before any metadata is loaded. See [`archive_raw_csv_to_s3`](proc/service/load_csv_srv.py).
+
 ### Audit Data
 
 The application is configured with [django-simple-history](https://django-simple-history.readthedocs.io/en/latest/)

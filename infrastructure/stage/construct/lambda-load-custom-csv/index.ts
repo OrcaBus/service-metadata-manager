@@ -10,6 +10,7 @@ import {
 import { EventBus } from 'aws-cdk-lib/aws-events';
 import { IManagedPolicy } from 'aws-cdk-lib/aws-iam';
 import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
+import { IBucket } from 'aws-cdk-lib/aws-s3';
 
 type LambdaProps = {
   /**
@@ -24,6 +25,10 @@ type LambdaProps = {
    * The eventBusName to notify metadata state change
    */
   eventBusName: string;
+  /**
+   * Bucket used to keep a raw, in-house copy of every ingested custom metadata csv for traceability
+   */
+  rawCsvArchiveBucket: IBucket;
 };
 
 export class LambdaLoadCustomCSVConstruct extends Construct {
@@ -37,6 +42,7 @@ export class LambdaLoadCustomCSVConstruct extends Construct {
         ...lambdaProps.basicLambdaConfig.environment,
 
         EVENT_BUS_NAME: lambdaProps.eventBusName,
+        RAW_METADATA_CSV_BUCKET_NAME: lambdaProps.rawCsvArchiveBucket.bucketName,
       },
       securityGroups: lambdaProps.basicLambdaConfig.securityGroups,
       vpc: lambdaProps.basicLambdaConfig.vpc,
@@ -50,6 +56,9 @@ export class LambdaLoadCustomCSVConstruct extends Construct {
       memorySize: 4096,
     });
     this.lambda.role?.addManagedPolicy(lambdaProps.rdsConnectPolicy);
+
+    // Allow the lambda to archive raw csv copies into the bucket (write-only, no read/delete needed)
+    lambdaProps.rawCsvArchiveBucket.grantPut(this.lambda);
 
     // We need to store this lambda ARN somewhere so that we could refer when need to load this manually
     new StringParameter(this, 'LoadCustomCSVLambdaArnParameterStore', {
